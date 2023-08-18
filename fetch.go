@@ -14,6 +14,7 @@ import (
     "strconv"
     "math"
     "github.com/remeh/sizedwaitgroup"
+    "fmt"
 )
 
 func cpanelVersion() string{
@@ -66,9 +67,9 @@ type UapiResponse struct {
       Errors string `json:"errors"`
       Data struct {
         Http int  `json:"http"`
-        MegabytesLimit string `json:"megabyte_limit"`
-        MegabytesRemain string `json:"megabytes_remain"`
-        MegabytesUsed string `json:"megabytes_used"`
+        MegabytesLimit interface{} `json:"megabyte_limit"`
+        MegabytesRemain interface{} `json:"megabytes_remain"`
+        MegabytesUsed interface{} `json:"megabytes_used"`
       } `json:"data"`   
     } `json:"result"`
 }
@@ -110,37 +111,125 @@ func getBandwidth(user string) int{
     
 }
 
+func convertToFloat(value interface{}) (float64, error) {
+	switch v := value.(type) {
+	case int:
+		return float64(v), nil
+	case float64:
+		return v, nil
+	case string:
+		return parseFloat(v)
+	default:
+		return 0, fmt.Errorf("unsupported type: %T", v)
+	}
+}
+
+func parseFloat(s string) (float64, error) {
+	return strconv.ParseFloat(s, 64)
+}
+
+func convertToString(value interface{}) (string, error) {
+	switch v := value.(type) {
+	case int, float64:
+		return fmt.Sprintf("%v", v), nil
+	case string:
+		return v, nil
+	default:
+		return "", fmt.Errorf("unsupported type: %T", v)
+	}
+}
+
+/*
+Example quota output (Aug 18, 2023):
+# /usr/bin/uapi Quota get_quota_info --user dummyuser2 --output=jsonpretty
+{
+   "func" : "get_quota_info",
+   "module" : "Quota",
+   "result" : {
+      "status" : 1,
+      "messages" : null,
+      "metadata" : {},
+      "data" : {
+         "inodes_used" : 104,
+         "inodes_remain" : "0",
+         "megabyte_limit" : 1024,
+         "under_megabyte_limit" : "1",
+         "under_quota_overall" : "1",
+         "megabytes_used" : 401.77,
+         "under_inode_limit" : "1",
+         "megabytes_remain" : 622.23,
+         "inode_limit" : "0"
+      },
+      "errors" : null,
+      "warnings" : null
+   },
+   "apiversion" : 3
+}
+
+# Sometimes it also comes out as strings:
+# /usr/bin/uapi Quota get_quota_info --user paneltest1 --output=jsonpretty
+{
+   "func" : "get_quota_info",
+   "apiversion" : 3,
+   "result" : {
+      "status" : 1,
+      "messages" : null,
+      "metadata" : {},
+      "data" : {
+         "under_quota_overall" : "1",
+         "under_megabyte_limit" : "1",
+         "megabyte_limit" : "0.00",
+         "inodes_remain" : "0",
+         "inodes_used" : 262,
+         "inode_limit" : "0",
+         "megabytes_remain" : "0.00",
+         "under_inode_limit" : "1",
+         "megabytes_used" : 7.13
+      },
+      "errors" : null,
+      "warnings" : null
+   },
+   "module" : "Quota"
+}
+
+*/
 func getQuota(user string) (string,string,float64){
     
     out := cpUapi(strings.TrimSpace(user),"Quota","get_quota_info")
     
     var resp UapiResponse
-    
-    
 	err := json.Unmarshal(out, &resp)
 	
 	if err != nil {
 		log.Println("error:", err)
 		return "","",0
 	}
+
+    megabytesLimit, _ := convertToFloat(resp.Result.Data.MegabytesLimit)
+	megabytesUsed, _ := convertToFloat(resp.Result.Data.MegabytesUsed)
 	
-	
-	used,serr1 := strconv.ParseFloat(resp.Result.Data.MegabytesUsed,64)
-	limit,serr2 := strconv.ParseFloat(resp.Result.Data.MegabytesLimit,64)
-	
-	if(serr1!=nil){log.Println(serr1)}
-	if(serr2!=nil){log.Println(serr2)}
-	
+    /*
+	fmt.Println("Megabytes Limit (float64):", megabytesLimit)
+	fmt.Println("Megabytes Used (float64):", megabytesUsed)
+    */
+
 	perc := float64(0)
 	
-	if(limit>0){
-    
-	perc = math.Round((used/limit) * 100)
-	
+	if(megabytesLimit>0){
+	    perc = math.Round((megabytesUsed/megabytesLimit) * 100)
 	}
 
-	
-    return resp.Result.Data.MegabytesLimit,resp.Result.Data.MegabytesUsed,perc
+	// Converting to string if needed
+	megabytesLimitStr, _ := convertToString(resp.Result.Data.MegabytesLimit)
+	megabytesUsedStr, _ := convertToString(resp.Result.Data.MegabytesUsed)
+
+    /*
+	fmt.Println("Megabytes Limit (string):", megabytesLimitStr)
+	fmt.Println("Megabytes Remain (string):", megabytesRemainStr)
+	fmt.Println("Megabytes Used (string):", megabytesUsedStr)
+    */
+
+    return megabytesLimitStr, megabytesUsedStr, perc
 }
 
 func cpUapi(user string,commands ...string) []byte{
