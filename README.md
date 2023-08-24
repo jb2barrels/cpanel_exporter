@@ -49,6 +49,9 @@ cpanel_sessions_email 17
 # HELP cpanel_sessions_web cPanel session
 # TYPE cpanel_sessions_web gauge
 cpanel_sessions_web 10
+# HELP cpanel_start_time_unix_timestamp Current unix timestamp of server start time
+# TYPE cpanel_start_time_unix_timestamp gauge
+cpanel_start_time_unix_timestamp 1.692866733e+09
 # HELP cpanel_users_active Current Active Users
 # TYPE cpanel_users_active gauge
 cpanel_users_active 17
@@ -58,4 +61,35 @@ cpanel_users_suspended 6
 ```
 
 
+### Quick notes
+Build binary:
+```
+go build -modfile go.mod
+```
 
+### Run binary
+```
+./cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117
+```
+
+### Visit metrics page
+```
+http://example.com:59117/metrics
+```
+
+### Telegraf template for InfluxDB
+- vi /etc/telegraf/telegraf.d/cpanel_metrics.conf
+- Add this to telegraf config:
+```
+# InfluxDB to write metrics to
+[[outputs.influxdb]]
+  urls = ["http://123.123.123.123:8086"]
+  database = "example_database"
+  username = "example_username"
+  password = "example_password"
+
+# Pull metrics from cpanel exporter
+[[inputs.prometheus]]
+  #Example CPanel Test Server on Lan
+  urls = ['http://172.23.55.55:59117/metrics']
+```
