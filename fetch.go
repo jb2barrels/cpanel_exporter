@@ -1,6 +1,5 @@
 package main
 
-
 import (
 	"bufio"
 	"log"
@@ -19,9 +18,8 @@ import (
 )
 
 func getStartTimeUnixTimestamp() int64{
-
     uptimeOutput, errUptime := exec.Command("uptime", "-s").CombinedOutput()
-    
+
     if errUptime != nil {
         log.Println("errUptime:")
         log.Println(errUptime)
@@ -35,48 +33,35 @@ func getStartTimeUnixTimestamp() int64{
         log.Println(errTimeParse)
         return -1
     }
-    
+
     return uptimeTime.Unix()
-    
 }
 
 func cpanelVersion() string{
-
     out, err := exec.Command("/usr/local/cpanel/cpanel","-V").CombinedOutput()
-    
+
     if err != nil {
         log.Println(err)
         return ""
     }
-    
+
     return string(out)
-    
 }
 
 func getUsernames() []string {
-    
     files := getFilesInDir("/var/cpanel/users")
-    
     return files
-    
 }
 
 func getUsers(typ string) int{
-
-    
     files := getFilesInDir("/var/cpanel/users")
-    
+
     if(typ!="suspended"){ 
-        
-        
         return len(files)
-        
     }
-    
+
     matches := matchFilesLine(files,"SUSPENDED=1",true)
-   
-   return len(matches)
-    
+    return len(matches)
 }
 
 type UapiResponse struct {
@@ -84,82 +69,70 @@ type UapiResponse struct {
     Module string `json:"module"`
     Func string `json:"func"`
     Result struct {
-      Messages string `json:"messages"`
-      Status int `json:"status"`
-      Warning string `json:"warning"`
-      Errors string `json:"errors"`
-      Data struct {
-        Http int  `json:"http"`
-        MegabytesLimit interface{} `json:"megabyte_limit"`
-        MegabytesRemain interface{} `json:"megabytes_remain"`
-        MegabytesUsed interface{} `json:"megabytes_used"`
-      } `json:"data"`   
+        Messages string `json:"messages"`
+        Status int `json:"status"`
+        Warning string `json:"warning"`
+        Errors string `json:"errors"`
+        Data struct {
+            Http int  `json:"http"`
+            MegabytesLimit interface{} `json:"megabyte_limit"`
+            MegabytesRemain interface{} `json:"megabytes_remain"`
+            MegabytesUsed interface{} `json:"megabytes_used"`
+        } `json:"data"`   
     } `json:"result"`
 }
 
 func getBandwidth(user string) int{
-    
-    
-        var bw int
-        var lines []string
-        
-        file, err := os.Open("/var/cpanel/bandwidth.cache/"+user)
-     
-    	if err != nil {
-    		log.Println("failed opening file: %s", err)
-    		return bw
-    	}
-     
-    	scanner := bufio.NewScanner(file)
-    	scanner.Split(bufio.ScanLines)
+    var bw int
+    var lines []string
 
-    	for scanner.Scan() {
-
-    		
-    		txty := scanner.Text()
-  
-     
-            lines = append(lines,txty)
-            
-    	}
-     
-    	file.Close()
-    	
-    	out := strings.Join(lines,"\n")
-    	
-    	bw,_ = strconv.Atoi(out)
-    	
-	
+    file, err := os.Open("/var/cpanel/bandwidth.cache/"+user)
+    if err != nil {
+        log.Println("failed opening file: %s", err)
         return bw
-    
+    }
+
+    scanner := bufio.NewScanner(file)
+    scanner.Split(bufio.ScanLines)
+    for scanner.Scan() {
+        txty := scanner.Text()
+        lines = append(lines,txty)
+    }
+
+    file.Close()
+
+    out := strings.Join(lines,"\n")
+    bw,_ = strconv.Atoi(out)
+
+    return bw
 }
 
 func convertToFloat(value interface{}) (float64, error) {
-	switch v := value.(type) {
-	case int:
-		return float64(v), nil
-	case float64:
-		return v, nil
-	case string:
-		return parseFloat(v)
-	default:
-		return 0, fmt.Errorf("unsupported type: %T", v)
-	}
+    switch v := value.(type) {
+    case int:
+        return float64(v), nil
+    case float64:
+        return v, nil
+    case string:
+        return parseFloat(v)
+    default:
+        return 0, fmt.Errorf("unsupported type: %T", v)
+    }
 }
 
 func parseFloat(s string) (float64, error) {
-	return strconv.ParseFloat(s, 64)
+    return strconv.ParseFloat(s, 64)
 }
 
 func convertToString(value interface{}) (string, error) {
-	switch v := value.(type) {
-	case int, float64:
-		return fmt.Sprintf("%v", v), nil
-	case string:
-		return v, nil
-	default:
-		return "", fmt.Errorf("unsupported type: %T", v)
-	}
+    switch v := value.(type) {
+    case int, float64:
+        return fmt.Sprintf("%v", v), nil
+    case string:
+        return v, nil
+    default:
+        return "", fmt.Errorf("unsupported type: %T", v)
+    }
 }
 
 /*
@@ -217,394 +190,265 @@ Example quota output (Aug 18, 2023):
 
 */
 func getQuota(user string) (string,string,float64){
-    
     out := cpUapi(strings.TrimSpace(user),"Quota","get_quota_info")
-    
+
     var resp UapiResponse
-	err := json.Unmarshal(out, &resp)
-	
-	if err != nil {
-		log.Println("error:", err)
-		return "","",0
-	}
+    err := json.Unmarshal(out, &resp)
+
+    if err != nil {
+        log.Println("error:", err)
+        return "","",0
+    }
 
     megabytesLimit, _ := convertToFloat(resp.Result.Data.MegabytesLimit)
-	megabytesUsed, _ := convertToFloat(resp.Result.Data.MegabytesUsed)
-	
+    megabytesUsed, _ := convertToFloat(resp.Result.Data.MegabytesUsed)
+
     /*
-	fmt.Println("Megabytes Limit (float64):", megabytesLimit)
-	fmt.Println("Megabytes Used (float64):", megabytesUsed)
+    fmt.Println("Megabytes Limit (float64):", megabytesLimit)
+    fmt.Println("Megabytes Used (float64):", megabytesUsed)
     */
 
-	perc := float64(0)
-	
-	if(megabytesLimit>0){
-	    perc = math.Round((megabytesUsed/megabytesLimit) * 100)
-	}
+    perc := float64(0)
 
-	// Converting to string if needed
-	megabytesLimitStr, _ := convertToString(resp.Result.Data.MegabytesLimit)
-	megabytesUsedStr, _ := convertToString(resp.Result.Data.MegabytesUsed)
+    if(megabytesLimit>0){
+        perc = math.Round((megabytesUsed/megabytesLimit) * 100)
+    }
+
+    // Converting to string if needed
+    megabytesLimitStr, _ := convertToString(resp.Result.Data.MegabytesLimit)
+    megabytesUsedStr, _ := convertToString(resp.Result.Data.MegabytesUsed)
 
     /*
-	fmt.Println("Megabytes Limit (string):", megabytesLimitStr)
-	fmt.Println("Megabytes Remain (string):", megabytesRemainStr)
-	fmt.Println("Megabytes Used (string):", megabytesUsedStr)
+    fmt.Println("Megabytes Limit (string):", megabytesLimitStr)
+    fmt.Println("Megabytes Remain (string):", megabytesRemainStr)
+    fmt.Println("Megabytes Used (string):", megabytesUsedStr)
     */
 
     return megabytesLimitStr, megabytesUsedStr, perc
 }
 
 func cpUapi(user string,commands ...string) []byte{
-    
-    
     var com []string
-    
     com = append(com,"--user="+user)
-    
     com = append(com,"--output=json")
-    
     for _,c:= range commands {
-        
-        
         com = append(com,c)
-        
     }
-    
-    
+
     out, err := exec.Command("/usr/bin/uapi",com...).CombinedOutput()
-    
     if err != nil {
         log.Println(err)
         return []byte("")
     }
-    
-    return out
 
-    
+    return out
 }
 
 
 
 func getFTP() []string{
-   
-        var lines []string
-        
-        file, err := os.Open("/etc/proftpd/passwd.vhosts")
-     
-    	if err != nil {
-    		log.Println("failed opening file: %s", err)
-    		return lines
-    	}
-     
-    	scanner := bufio.NewScanner(file)
-    	scanner.Split(bufio.ScanLines)
-
-    	for scanner.Scan() {
-
-    		
-    		txty := scanner.Text()
-    		
-            parts := strings.Split(txty,":")
-         
-             if(len(parts)>0){
-                 
-                lines = append(lines,parts[0])
-                 
-             }
-
-    		
-    	}
-     
-    	file.Close()
-	
+    var lines []string
+    file, err := os.Open("/etc/proftpd/passwd.vhosts")
+    if err != nil {
+        log.Println("failed opening file: %s", err)
         return lines
+    }
 
-    
+    scanner := bufio.NewScanner(file)
+    scanner.Split(bufio.ScanLines)
+
+    for scanner.Scan() {
+        txty := scanner.Text()
+        parts := strings.Split(txty,":")
+        if(len(parts)>0){
+        lines = append(lines,parts[0])
+        }
+    }
+    file.Close()
+
+    return lines
 }
 
 func getEmails() []string{
-
     var email []string
-    
     var wg = sizedwaitgroup.New(100)
-    
     files := getFilesInDir("/var/cpanel/users")
-    
     for _,f := range files {
-        
         wg.Add()
-        
         go func(f string){
-        
-        defer wg.Done()
-        
-        user := filepath.Base(f)
-        
-        matches := matchFileLine(f,"^DNS")
-        
-        for _,m := range matches {
-             
-             parts := strings.Split(m,"=")
-             
-             if(len(parts)>0){
-               
-                 dom := parts[1]  
-                 
-                // log.Println("Looking in","/home/"+user+"/mail/"+dom)
-               
-                 fldfs := getFilesInDir("/home/"+user+"/mail/"+dom)
-                 
-                 for _,fl := range fldfs {
-                     
-                     eu := filepath.Base(fl)
-                     
-                   //  log.Println("Email Dir",fl)
-                     
-                     if(eu!="cur" && eu!="new" && eu!="tmp" && eu!=""){
-                         
-                         email = append(email,eu+"@"+dom)
-                         
-                     }
-                     
-                     
-                 }
-             }
-             
-            
-        }
-       
-        
+            defer wg.Done()
+            user := filepath.Base(f)
+            matches := matchFileLine(f,"^DNS")
+
+            for _,m := range matches {
+                parts := strings.Split(m,"=")
+                if(len(parts)>0) {
+                    dom := parts[1]
+                    // log.Println("Looking in","/home/"+user+"/mail/"+dom)
+                    fldfs := getFilesInDir("/home/"+user+"/mail/"+dom)
+                    for _,fl := range fldfs {
+                        eu := filepath.Base(fl)
+                        //  log.Println("Email Dir",fl)
+                        if(eu!="cur" && eu!="new" && eu!="tmp" && eu!="") {
+                            email = append(email,eu+"@"+dom)
+                        }
+                    }
+                }
+            }
         }(f)
-    
     }
-    
     wg.Wait()
-    
     return email
-    
 }
 
 func getPlans() (map[string]int){
-    
     var plans = make(map[string]int)
-    
     files := getFilesInDir("/var/cpanel/users")
-    
     matches := matchFilesLine(files,"PLAN=.*",true)
-   
+
     for _,m := range matches {
-         
-         parts := strings.Split(m,"=")
-         
-         if(len(parts)>0){
-             
-             plans[parts[1]]++
-             
-         }
+        parts := strings.Split(m,"=")
+        if(len(parts)>0){
+            plans[parts[1]]++
+        }
     }
-    
+
     return plans
 }
 
 func matchFileLine(f string,regx string) map[string]string{ 
-    
-        var lines = make(map[string]string)
-     
-    	file, err := os.Open(f)
-     
-    	if err != nil {
-    		log.Println("failed opening file: %s", err)
-    		return lines
-    	}
-     
-    	scanner := bufio.NewScanner(file)
-    	scanner.Split(bufio.ScanLines)
+    var lines = make(map[string]string)
+    file, err := os.Open(f)
 
-    	for scanner.Scan() {
+    if err != nil {
+        log.Println("failed opening file: %s", err)
+        return lines
+    }
 
-    		
-    		txty := scanner.Text()
-    		
-            matched, _ := regexp.MatchString(regx, txty)
-    		
-    	    if(matched==true){
-        	    
-        	    lines[f]=txty
-        	    
-    	    }
-    		
-    	}
-     
-    	file.Close()
-	
+    scanner := bufio.NewScanner(file)
+    scanner.Split(bufio.ScanLines)
 
-         return lines
+    for scanner.Scan() {
+        txty := scanner.Text()
+        matched, _ := regexp.MatchString(regx, txty)
+        if(matched==true){
+            lines[f]=txty
+        }
+    }
 
-    
+    file.Close()
+    return lines
 }
 
 func matchFilesLine(files []string,regx string, stopatfirst bool) map[string]string{
-    
-    
-     var lines = make(map[string]string)
-    
-     for _,f := range files {
-    
-    	file, err := os.Open(f)
-     
-    	if err != nil {
-    		log.Println("failed opening file: %s", err)
-    		continue
-    	}
-     
-    	scanner := bufio.NewScanner(file)
-    	scanner.Split(bufio.ScanLines)
+    var lines = make(map[string]string)
 
-     
-    	for scanner.Scan() {
+    for _,f := range files {
+        file, err := os.Open(f)
 
-    		
-    		txty := scanner.Text()
-    		
+        if err != nil {
+            log.Println("failed opening file: %s", err)
+            continue
+        }
+
+        scanner := bufio.NewScanner(file)
+        scanner.Split(bufio.ScanLines)
+
+        for scanner.Scan() {
+            txty := scanner.Text()
             matched, _ := regexp.MatchString(regx, txty)
-    		
-    	    if(matched==true){
-        	    
-        	    lines[f]=txty
-        	    
-        	    if(stopatfirst==true){
-            	    
-            	    break
-        	    }
-        	    
-    
-    	    }
-    		
-    	}
-     
-    	file.Close()
-	
-   }
+            if(matched==true) {
+                lines[f]=txty
+                if(stopatfirst==true){
+                    break
+                }
+            }
+        }
 
-   return lines
-    
-    
+        file.Close()
+
+    }
+
+    return lines
 }
 
 
 func getSessions(web string) int{
-    
     files := getFilesInDir("/var/cpanel/sessions/raw")
     
     var wctr int
     var ectr int
     
     for _,f := range files {
-        
-        if(strings.Contains(f,"@")){
-            
+        if(strings.Contains(f,"@")) {
             ectr++
-            
-        }else if(!strings.Contains(f,"_dav_")){
-        
+        }
+        else if(!strings.Contains(f,"_dav_")) {
             wctr++
         } 
-        
-   
     }
     
-    if(web=="web"){
-        
+    if(web=="web") {
         return wctr
-        
     }
     
     return ectr
-    
 }
 
 func getRelease() (string){
-    
-        file, err := os.Open("/etc/cpupdate.conf")
-     
-    	if err != nil {
-    		log.Println("failed opening file: %s", err)
-            return ""
-    	}
-    	
-    	defer file.Close()
-     
-    	scanner := bufio.NewScanner(file)
-    	scanner.Split(bufio.ScanLines)
+    file, err := os.Open("/etc/cpupdate.conf")
 
-     
-    	for scanner.Scan() {
-    		
-    		txty := scanner.Text()
+    if err != nil {
+        log.Println("failed opening file: %s", err)
+        return ""
+    }
 
-            
+    defer file.Close()
 
-            if(strings.Contains(txty,"CPANEL=")){
-                
-                 parts := strings.Split(txty,"=")
-                 
-                 if(len(parts)>0){
-                     
-                     return parts[1]
-                     
-                 }   
+    scanner := bufio.NewScanner(file)
+    scanner.Split(bufio.ScanLines)
+
+    for scanner.Scan() {
+        txty := scanner.Text()
+        if(strings.Contains(txty,"CPANEL=")){
+            parts := strings.Split(txty,"=")
+            if(len(parts)>0){
+                return parts[1]
             }
-    	}
-     
-    	return ""
-    	
-    	
-    
-    
+        }
+    }
+
+    return "" 
 }
 
 func getDomains() ([]string){
-    
-        var domains []string
+    var domains []string
 
-        file, err := os.Open("/etc/userdomains")
-     
-    	if err != nil {
-    		log.Println("failed opening file: %s", err)
-    		 return domains
-    	}
-     
-    	scanner := bufio.NewScanner(file)
-    	scanner.Split(bufio.ScanLines)
+    file, err := os.Open("/etc/userdomains")
 
-     
-    	for scanner.Scan() {
+    if err != nil {
+        log.Println("failed opening file: %s", err)
+        return domains
+    }
 
-    		
-    		txty := scanner.Text()
-    		
-            parts := strings.Split(txty,":")
-            
-            
-            if(len(parts)>1){
-                
-                domains = append(domains,parts[0])
-                
-            }
-            
-    		
-    	}
-     
-    	file.Close()
-    	
-    	return domains
-    
-    
+    scanner := bufio.NewScanner(file)
+    scanner.Split(bufio.ScanLines)
+
+
+    for scanner.Scan() {
+        txty := scanner.Text()
+        parts := strings.Split(txty,":")
+
+        if(len(parts)>1){
+            domains = append(domains,parts[0])
+        }
+    }
+
+    file.Close()
+    return domains
 }
 
 func getFilesInDir(root string) []string{
-    
     var files []string
     /*
     err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -624,12 +468,10 @@ func getFilesInDir(root string) []string{
     }
     
     for _, f := range filer {
-     files = append(files,root+"/"+f.Name())
+        files = append(files,root+"/"+f.Name())
     }
  
     return files
-    
-    
 }
 
 
