@@ -45,6 +45,10 @@ var (
 		Help: "Current Domains and Subdomains setup",
 	})
 	
+    serverStartTime = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "cpanel_start_time_unix_timestamp",
+		Help: "Current unix timestamp of server start time",
+	})
 
 	//requestCount.WithLabelValues().Add
 	//requestCount.With(prometheus.Labels{"type": "delete", "user": "alice"}).Inc()
@@ -190,6 +194,8 @@ func runMetrics(){
 
                vers := cpanelVersion()
 
+               serverStartTimeVar := getStartTimeUnixTimestamp()
+
                plans := getPlans()
 
                domains := getDomains()
@@ -202,6 +208,8 @@ func runMetrics(){
  
                emails := getEmails()
                               
+               serverStartTime.Set(float64(serverStartTimeVar))
+
                domainsConfigured.Set(float64(domains_ct))
                
                cpanelFTP.Set(float64(len(getFTP())))

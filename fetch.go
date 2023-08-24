@@ -15,7 +15,30 @@ import (
     "math"
     "github.com/remeh/sizedwaitgroup"
     "fmt"
+    "time"
 )
+
+func getStartTimeUnixTimestamp() int64{
+
+    uptimeOutput, errUptime := exec.Command("uptime", "-s").CombinedOutput()
+    
+    if errUptime != nil {
+        log.Println("errUptime:")
+        log.Println(errUptime)
+        return -1
+    }
+
+    uptimeString := strings.TrimSpace(string(uptimeOutput))
+    uptimeTime, errTimeParse := time.Parse("2006-01-02 15:04:05", uptimeString)
+    if errTimeParse != nil {
+        log.Println("errTimeParse:")
+        log.Println(errTimeParse)
+        return -1
+    }
+    
+    return uptimeTime.Unix()
+    
+}
 
 func cpanelVersion() string{
 
