@@ -382,10 +382,9 @@ func getSessions(web string) int{
     for _,f := range files {
         if(strings.Contains(f,"@")) {
             ectr++
-        }
-        else if(!strings.Contains(f,"_dav_")) {
+        } else if(!strings.Contains(f,"_dav_")) {
             wctr++
-        } 
+        }
     }
     
     if(web=="web") {
