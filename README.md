@@ -114,9 +114,9 @@ http://example.com:59117/metrics
 # InfluxDB to write metrics to
 [[outputs.influxdb]]
   urls = ["http://123.123.123.123:8086"]
-  database = "example_database"
-  username = "example_username"
-  password = "example_password"
+  database = "example_influx_database"
+  username = "example_influx_username"
+  password = "example_influx_password"
 
 # Pull metrics from cpanel exporter
 [[inputs.prometheus]]
