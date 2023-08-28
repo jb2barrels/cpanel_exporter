@@ -4,6 +4,7 @@
 BASICAUTH_USERNAME=""
 BASICAUTH_PASSWORD=""
 PORT_HTTPS=""
+PORT_HTTP="59117"
 
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
@@ -23,6 +24,11 @@ while [[ $# -gt 0 ]]; do
             PORT_HTTPS="$1"
             shift
             ;;
+        -port)
+            shift
+            PORT_HTTP="$1"
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             exit 1
@@ -40,12 +46,15 @@ if [ -f "./cpanel_exporter" ]; then
     service_file="/etc/systemd/system/cpanel_exporter.service"
 
     # Build ExecStart command
-    exec_start_cmd="/bin/cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117"
+    exec_start_cmd="/bin/cpanel_exporter -interval 60 -interval_heavy 1800"
     
     # Add basic auth flags if provided
     if [ ! -z "$BASICAUTH_USERNAME" ] && [ ! -z "$BASICAUTH_PASSWORD" ]; then
         exec_start_cmd+=" -basicauth_username \"$BASICAUTH_USERNAME\" -basicauth_password \"$BASICAUTH_PASSWORD\""
     fi
+
+    # Add required http port
+    exec_start_cmd+=" -port_http \"$PORT_HTTP\""
 
     # Add https port
     if [ ! -z "$PORT_HTTPS" ]; then
