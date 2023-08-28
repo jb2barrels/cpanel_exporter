@@ -77,6 +77,14 @@ go build -modfile go.mod
 ./cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117 -basicauth_username "example_username" -basicauth_password "example_password123"
 ```
 
+### Run binary with an optional https port enabled
+
+Self signed certificate will by default install to /opt/cpanel_exporter/certs/
+You may modify this path in cpanel_exporter.go if you'd like, or replace the certs after generation.
+```
+./cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117 -port_https 59118 -basicauth_username "example_username" -basicauth_password "example_password123"
+```
+
 ### Build binary
 ```
 ./build.sh
@@ -91,6 +99,11 @@ Install service
 Or install with basic auth:
 ```
 ./install.sh -basicauth_username "example_username" -basicauth_password "example_password123"
+```
+
+Or install with basic auth and https:
+```
+./install.sh -basicauth_username "example_username" -basicauth_password "example_password123" -port_https 59118
 ```
 
 Uninstall service

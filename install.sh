@@ -3,6 +3,7 @@
 # Default values for flags
 BASICAUTH_USERNAME=""
 BASICAUTH_PASSWORD=""
+PORT_HTTPS=""
 
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
@@ -15,6 +16,11 @@ while [[ $# -gt 0 ]]; do
         -basicauth_password)
             shift
             BASICAUTH_PASSWORD="$1"
+            shift
+            ;;
+        -port_https)
+            shift
+            PORT_HTTPS="$1"
             shift
             ;;
         *)
@@ -39,6 +45,11 @@ if [ -f "./cpanel_exporter" ]; then
     # Add basic auth flags if provided
     if [ ! -z "$BASICAUTH_USERNAME" ] && [ ! -z "$BASICAUTH_PASSWORD" ]; then
         exec_start_cmd+=" -basicauth_username \"$BASICAUTH_USERNAME\" -basicauth_password \"$BASICAUTH_PASSWORD\""
+    fi
+
+    # Add https port
+    if [ ! -z "$PORT_HTTPS" ]; then
+        exec_start_cmd+=" -port_https \"$PORT_HTTPS\""
     fi
 
     service_content="[Unit]
