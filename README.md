@@ -122,4 +122,8 @@ http://example.com:59117/metrics
 [[inputs.prometheus]]
   #Example CPanel Test Server on Lan
   urls = ['http://172.23.55.55:59117/metrics']
+  
+  # Optional basic authentication
+  #username = "example_username"
+  #password = "example_password123"
 ```
