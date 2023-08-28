@@ -54,7 +54,7 @@ if [ -f "./cpanel_exporter" ]; then
     fi
 
     # Add required http port
-    exec_start_cmd+=" -port_http \"$PORT_HTTP\""
+    exec_start_cmd+=" -port \"$PORT_HTTP\""
 
     # Add https port
     if [ ! -z "$PORT_HTTPS" ]; then
