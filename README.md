@@ -77,6 +77,26 @@ go build -modfile go.mod
 ./cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117 -basicauth_username "example_username" -basicauth_password "example_password123"
 ```
 
+### Build binary
+```
+./build.sh
+```
+
+### Install & Uninstall services commands
+Install service
+```
+./install.sh
+```
+
+Uninstall service
+```
+./uninstall.sh
+```
+See service status
+```
+systemctl status cpanel_exporter
+```
+
 ### Visit metrics page
 ```
 http://example.com:59117/metrics
