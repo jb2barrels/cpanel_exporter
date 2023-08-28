@@ -1,5 +1,29 @@
 #!/bin/bash
 
+# Default values for flags
+BASICAUTH_USERNAME=""
+BASICAUTH_PASSWORD=""
+
+# Parse command-line arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -basicauth_username)
+            shift
+            BASICAUTH_USERNAME="$1"
+            shift
+            ;;
+        -basicauth_password)
+            shift
+            BASICAUTH_PASSWORD="$1"
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
 # Check if cpanel_exporter binary exists
 if [ -f "./cpanel_exporter" ]; then
     # Copy cpanel_exporter to /bin/
@@ -8,17 +32,28 @@ if [ -f "./cpanel_exporter" ]; then
 
     # Create systemd service unit file
     service_file="/etc/systemd/system/cpanel_exporter.service"
-    echo "[Unit]
+
+    # Build ExecStart command
+    exec_start_cmd="/bin/cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117"
+    
+    # Add basic auth flags if provided
+    if [ ! -z "$BASICAUTH_USERNAME" ] && [ ! -z "$BASICAUTH_PASSWORD" ]; then
+        exec_start_cmd+=" -basicauth_username \"$BASICAUTH_USERNAME\" -basicauth_password \"$BASICAUTH_PASSWORD\""
+    fi
+
+    service_content="[Unit]
 Description=CPanel Exporter
 After=network.target
 
 [Service]
 User=root
 WorkingDirectory=/root
-ExecStart=/bin/cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117
+ExecStart=$exec_start_cmd
 
 [Install]
-WantedBy=multi-user.target" | tee $service_file > /dev/null
+WantedBy=multi-user.target"
+
+    echo "$service_content" | tee $service_file > /dev/null
     echo "cpanel_exporter systemd service unit file created"
 
     # Reload systemd manager configuration

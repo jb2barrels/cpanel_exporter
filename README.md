@@ -88,6 +88,11 @@ Install service
 ./install.sh
 ```
 
+Or install with basic auth:
+```
+./install.sh -basicauth_username "example_username" -basicauth_password "example_password123"
+```
+
 Uninstall service
 ```
 ./uninstall.sh
