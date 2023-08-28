@@ -137,6 +137,7 @@ http://example.com:59117/metrics
   urls = ['http://172.23.55.55:59117/metrics']
   
   # Optional basic authentication
+  #insecure_skip_verify = true
   #username = "example_username"
   #password = "example_password123"
 ```
