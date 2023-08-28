@@ -65,7 +65,7 @@ var (
     
     cpanelUserBandwidthLimit = promauto.NewGaugeVec(
         prometheus.GaugeOpts{
-            Name: "cpanel_bandwidth",
+            Name: "cpanel_bandwidth_user_limit",
             Help: "cPanel uapi User Bandwidth Max Limit",
         },
         []string{"user"},
@@ -73,7 +73,7 @@ var (
     
     cpanelUserBandwidthUsed = promauto.NewGaugeVec(
         prometheus.GaugeOpts{
-            Name: "cpanel_bandwidth",
+            Name: "cpanel_bandwidth_user_used",
             Help: "cPanel uapi User Bandwidth Used",
         },
         []string{"user"},
@@ -81,7 +81,7 @@ var (
 
     cpanelUserBandwidthUsedPercent = promauto.NewGaugeVec(
         prometheus.GaugeOpts{
-            Name: "cpanel_bandwidth",
+            Name: "cpanel_bandwidth_user_used_percent",
             Help: "cPanel uapi User Bandwidth Used Percent",
         },
         []string{"user"},
