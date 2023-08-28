@@ -17,6 +17,11 @@ var port string
 var (
     interval string
     interval_heavy string
+
+    //Used for basic auth
+	basicAuthUser  string
+	basicAuthPass  string
+
     //reg = prometheus.NewRegistry()
     //  reg.MustRegister(version.NewCollector("cpanel_exporter"))
     //  if err := r.Register(nc); err != nil {
@@ -238,6 +243,20 @@ func runMetrics(){
     }
 }
 
+func basicAuthMiddleware(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if basicAuthUser != "" && basicAuthPass != "" {
+			user, pass, ok := r.BasicAuth()
+			if !ok || user != basicAuthUser || pass != basicAuthPass {
+				w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		handler.ServeHTTP(w, r)
+	})
+}
 
 func main(){
     log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -245,6 +264,8 @@ func main(){
     flag.StringVar(&port, "port", "59117", "Metrics Port")
     flag.StringVar(&interval, "interval","60", "Check interval duration 60s by default")
     flag.StringVar(&interval_heavy, "interval_heavy","1800", "Bandwidth and other heavy checks interval, 1800s (30min) by default")
+    flag.StringVar(&basicAuthUser, "basicauth_username", "", "Basic Auth Username")
+	flag.StringVar(&basicAuthPass, "basicauth_password", "", "Basic Auth Password")
     flag.Parse()
 
     go runMetrics()
@@ -253,6 +274,15 @@ func main(){
     go fetchMetrics()
     go fetchUapiMetrics()
 
-    http.Handle("/metrics", promhttp.Handler())
+    //Without basic auth
+    //http.Handle("/metrics", promhttp.Handler())
+
+    //With basic auth
+    http.Handle("/metrics", basicAuthMiddleware(promhttp.Handler()))
+
+    if basicAuthUser == "" || basicAuthPass == "" {
+		log.Println("WARNING: HTTP server is running without basic authentication.")
+	}
+    
     http.ListenAndServe(":"+port, nil)
 }

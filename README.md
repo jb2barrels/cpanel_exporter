@@ -72,6 +72,11 @@ go build -modfile go.mod
 ./cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117
 ```
 
+### Run binary with basic auth enabled
+```
+./cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117 -basicauth_username "example_username" -basicauth_password "example_password123"
+```
+
 ### Visit metrics page
 ```
 http://example.com:59117/metrics
