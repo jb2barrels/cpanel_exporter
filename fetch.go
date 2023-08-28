@@ -140,29 +140,7 @@ type UapiResponseBandwidthUsage struct {
         Metadata struct {
             Transformed int `json:"transformed"`
         } `json:"metadata"`
-        Data struct {
-            //Percent5 int `json:"percent5"`
-            //Phrase string `json:"phrase"`
-            //Normalized int `json:"normalized"`
-            _Max string `json:"_max"`
-            //Near_limit_phrase string `json:"near_limit_phrase"`
-            //Max string `json:"max"`
-            //Is_maxed string `json:"is_maxed"`
-            //Module string `json:"module"`
-            //Item string `json:"item"`
-            //Role string `json:"role"`
-            //Maxed_phrase string `json:"maxed_phrase"`
-            //Count string `json:"count"`
-            Units string `json:"units"`
-            //Percent10 int `json:"percent10"`
-            //Percent20 int `json:"percent20"`
-            //Feature string `json:"feature"`
-            //Id string `json:"id"`
-            Percent int `json:"percent"`
-            //_Maxed int `json:"_maxed"`
-            _Count string `json:"_count"`
-            //Zeroisunlimited int `json:"zeroisunlimited"`
-        } `json:"data"`
+        Data []map[string]interface{} `json:"data"`
         Errors string `json:"errors"`
         Warning string `json:"warning"`
     } `json:"result"`
@@ -341,20 +319,24 @@ func convertToMB(value float64, unit string) float64 {
 
 func getUserBandwidthLimitAndUsage(user string) (string,float64,float64,float64) {
     //uapi --output=jsonpretty --user=example StatsBar get_stats display='bandwidthusage'
-    out := cpUapi(strings.TrimSpace(user),"StatsBar","get_stats", "display='bandwidthusage'")
+
+    //Intentionally left out single quote on display= , so its processed properly via the function
+    out := cpUapi(strings.TrimSpace(user),"StatsBar","get_stats", "display=bandwidthusage")
     
     var resp UapiResponseBandwidthUsage
     err := json.Unmarshal(out, &resp)
 
     if err != nil {
+        log.Println("original bytes for json:", string(out))
+        log.Println("user requested:", user)
         log.Println("error:", err)
         return "",0,0,0
     }
 
-    unitsOfMeasurement, _ := convertToString(resp.Result.Data.Units)
-    userBandwidthMax, _ := convertToFloat(resp.Result.Data._Max)
-    userBandwidthUsed, _ := convertToFloat(resp.Result.Data._Count)
-    userBandwidthUsedPercent, _ := convertToFloat(resp.Result.Data.Percent)
+    unitsOfMeasurement, _ := convertToString(resp.Result.Data[0]["units"])
+    userBandwidthMax, _ := convertToFloat(resp.Result.Data[0]["_max"])
+    userBandwidthUsed, _ := convertToFloat(resp.Result.Data[0]["_count"])
+    userBandwidthUsedPercent, _ := convertToFloat(resp.Result.Data[0]["percent"])
 
     /*
     fmt.Println("User (string):", user)
@@ -383,6 +365,7 @@ func cpUapi(user string,commands ...string) []byte{
         com = append(com,c)
     }
 
+    //log.Println("[DEBUG] Running com: /usr/bin/uapi " + strings.Join(com, " "))
     out, err := exec.Command("/usr/bin/uapi",com...).CombinedOutput()
     if err != nil {
         log.Println(err)
