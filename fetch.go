@@ -82,6 +82,93 @@ type UapiResponse struct {
     } `json:"result"`
 }
 
+/*
+#Example Data:
+#"max" data can either be "unlimited" or an actual limit such as "1 GB"
+#"_max" refers to bandwidth max limit, based on the "units" value of measurement
+#"_count" refers to the bandwidth used, based on the "units" value of measurement
+#"percent" is total percentage of the bandwidth utilization limit used
+
+[root@example]# uapi --output=jsonpretty --user=example StatsBar get_stats display='bandwidthusage'
+{
+   "module" : "StatsBar",
+   "apiversion" : 3,
+   "result" : {
+      "status" : 1,
+      "messages" : null,
+      "metadata" : {
+         "transformed" : 1
+      },
+      "data" : [
+         {
+            "percent5" : 0,
+            "phrase" : "Monthly Bandwidth Transfer",
+            "normalized" : 1,
+            "_max" : "unlimited",
+            "name" : "bandwidthusage",
+            "near_limit_phrase" : "You have transferred [format_bytes,_1] of your [format_bytes,_2] data allotment for this month.",
+            "max" : "unlimited",
+            "is_maxed" : 0,
+            "module" : "Stats",
+            "item" : "Monthly Bandwidth Transfer",
+            "role" : "WebServer",
+            "maxed_phrase" : "You have transferred your maximum allotment of data ([format_bytes,_1]) for this month.",
+            "count" : "20.2 MB",
+            "units" : "MB",
+            "percent10" : 0,
+            "percent20" : 0,
+            "feature" : "bandwidth",
+            "id" : "bandwidthusage",
+            "percent" : 0,
+            "_maxed" : 0,
+            "_count" : "20.20",
+            "zeroisunlimited" : 1
+         }
+      ],
+      "errors" : null,
+      "warnings" : null
+   },
+   "func" : "get_stats"
+}
+*/
+type UapiResponseBandwidthUsage struct {
+    Module string `json:"module"`
+    ApiVersion int `json:"apiversion"`
+    Result struct {
+        Status int `json:"status"`
+        Messages string `json:"messages"`
+        Metadata struct {
+            Transformed int `json:"transformed"`
+        } `json:"metadata"`
+        Data struct {
+            Percent5 int `json:"percent5"`
+            Phrase string `json:"phrase"`
+            Normalized int `json:"normalized"`
+            _Max string `json:"_max"`
+            Near_limit_phrase string `json:"near_limit_phrase"`
+            Max string `json:"max"`
+            Is_maxed string `json:"is_maxed"`
+            Module string `json:"module"`
+            Item string `json:"item"`
+            Role string `json:"role"`
+            Maxed_phrase string `json:"maxed_phrase"`
+            Count string `json:"count"`
+            Units string `json:"units"`
+            Percent10 int `json:"percent10"`
+            Percent20 int `json:"percent20"`
+            Feature string `json:"feature"`
+            Id string `json:"id"`
+            Percent int `json:"percent"`
+            _Maxed int `json:"_maxed"`
+            _Count string `json:"_count"`
+            Zeroisunlimited int `json:"zeroisunlimited"`
+        } `json:"data"`
+        Errors string `json:"errors"`
+        Warning string `json:"warning"`
+    } `json:"result"`
+    Func string `json:"func"`
+}
+
 func getBandwidth(user string) int{
     var bw int
     var lines []string
@@ -225,6 +312,67 @@ func getQuota(user string) (string,string,float64){
     */
 
     return megabytesLimitStr, megabytesUsedStr, perc
+}
+
+//This function may need to be modified, assuming cPanel ends up providing different string unit names
+//Was unable to determine what all strings they provide.
+func convertToMB(value float64, unit string) float64 {
+	unit = strings.ToUpper(unit)
+	switch unit {
+	case "KB":
+		return value / 1024
+	case "MB":
+		return value
+	case "GB":
+		return value * 1024
+	case "TB":
+		return value * 1024 * 1024
+	case "PB":
+		return value * 1024 * 1024 * 1024
+	case "B":
+		return value / (1024 * 1024)
+	case "BITS":
+		return value / (1024 * 1024 * 8)
+	default:
+        log.Println("Unknown string value unit for convertToMB(), returning back value as zero: "+unit)
+		return 0
+	}
+}
+
+func getUserBandwidthLimitAndUsage(user string) (string,float64,float64,float64) {
+    //uapi --output=jsonpretty --user=example StatsBar get_stats display='bandwidthusage'
+    out := cpUapi(strings.TrimSpace(user),"StatsBar","get_stats", "display='bandwidthusage'")
+    
+    var resp UapiResponseBandwidthUsage
+    err := json.Unmarshal(out, &resp)
+
+    if err != nil {
+        log.Println("error:", err)
+        return "",0,0,0
+    }
+
+    unitsOfMeasurement, _ := convertToString(resp.Result.Data.Units)
+    userBandwidthMax, _ := convertToFloat(resp.Result.Data._Max)
+    userBandwidthUsed, _ := convertToFloat(resp.Result.Data._Count)
+    userBandwidthUsedPercent, _ := convertToFloat(resp.Result.Data.Percent)
+
+    /*
+    fmt.Println("User (string):", user)
+    fmt.Println("Units of Measurement (string):", unitsOfMeasurement)
+    fmt.Println("User Bandwidth Max (float64):", userBandwidthMax)
+    fmt.Println("User Bandwidth Used (float64):", userBandwidthUsed)
+    fmt.Println("User Bandwidth Used Percent (float64):", userBandwidthUsedPercent)
+    */
+
+    //Convert to MB
+	userBandwidthUsedMB := convertToMB(userBandwidthUsed, unitsOfMeasurement)
+	userBandwidthMaxMB := convertToMB(userBandwidthMax, unitsOfMeasurement)
+
+    //Round value
+	userBandwidthUsedMB = math.Round(userBandwidthUsedMB*100) / 100
+	userBandwidthMaxMB = math.Round(userBandwidthMaxMB*100) / 100
+    
+    return "MB", userBandwidthMaxMB, userBandwidthUsedMB, userBandwidthUsedPercent
 }
 
 func cpUapi(user string,commands ...string) []byte{

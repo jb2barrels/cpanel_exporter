@@ -63,6 +63,29 @@ var (
         []string{"plan"},
     )
     
+    cpanelUserBandwidthLimit = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "cpanel_bandwidth",
+            Help: "cPanel uapi User Bandwidth Max Limit",
+        },
+        []string{"user"},
+    )
+    
+    cpanelUserBandwidthUsed = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "cpanel_bandwidth",
+            Help: "cPanel uapi User Bandwidth Used",
+        },
+        []string{"user"},
+    )
+
+    cpanelUserBandwidthUsedPercent = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "cpanel_bandwidth",
+            Help: "cPanel uapi User Bandwidth Used Percent",
+        },
+        []string{"user"},
+    )
 
     cpanelBandwidth = promauto.NewGaugeVec(
         prometheus.GaugeOpts{
@@ -145,19 +168,46 @@ func fetchUapiMetrics() {
 }
 
 func runUapiMetrics(){ 
+
+    //Loop through all cPanel usernames
     for _,u := range getUsernames() {
+
+        //User to search for statistics
         us := filepath.Base(u)
 
-        bw := getBandwidth(us)   
+        //---------------------------------------------------------------------
+        
+        //Get bandwidth limit and usage sourced from uapi (The function below has already converted numbers to MB utilization)
+        _,userBandwidthMax,userBandwidthUsed,userBandwidthUsedPercent := getUserBandwidthLimitAndUsage(us)
 
+        //cPanel Bandwidth MB max limit for user
+        cpanelUserBandwidthLimit.With(prometheus.Labels{"user": us }).Set(userBandwidthMax) 
+
+        //cPanel Bandwidth MB used for user
+        cpanelUserBandwidthUsed.With(prometheus.Labels{"user": us }).Set(userBandwidthUsed) 
+
+        //cPanel Bandwidth MB limit percentage used
+        cpanelUserBandwidthUsedPercent.With(prometheus.Labels{"user": us }).Set(userBandwidthUsedPercent) 
+
+        //---------------------------------------------------------------------
+
+        //Get file cached bandwidth utilization of user
+        bw := getBandwidth(us)
         cpanelBandwidth.With(prometheus.Labels{"user": us }).Set(float64(bw))
 
+        //---------------------------------------------------------------------
+
+        //cPanel Quota Percentage and Used
         _,used,perc := getQuota(us)
 
-        fused,_ := strconv.ParseFloat(used,64)
+        //cPanel Quota Percentage
+        cpanelQuota.With(prometheus.Labels{"user": us }).Set(perc)
 
-        cpanelQuota.With(prometheus.Labels{"user": us }).Set(perc)   
+        //cPanel Quota Used
+        fused,_ := strconv.ParseFloat(used,64)
         cpanelQuotaUsed.With(prometheus.Labels{"user": us }).Set(fused) 
+
+        //---------------------------------------------------------------------
     }
 }
 
