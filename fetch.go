@@ -141,27 +141,27 @@ type UapiResponseBandwidthUsage struct {
             Transformed int `json:"transformed"`
         } `json:"metadata"`
         Data struct {
-            Percent5 int `json:"percent5"`
-            Phrase string `json:"phrase"`
-            Normalized int `json:"normalized"`
+            //Percent5 int `json:"percent5"`
+            //Phrase string `json:"phrase"`
+            //Normalized int `json:"normalized"`
             _Max string `json:"_max"`
-            Near_limit_phrase string `json:"near_limit_phrase"`
-            Max string `json:"max"`
-            Is_maxed string `json:"is_maxed"`
-            Module string `json:"module"`
-            Item string `json:"item"`
-            Role string `json:"role"`
-            Maxed_phrase string `json:"maxed_phrase"`
-            Count string `json:"count"`
+            //Near_limit_phrase string `json:"near_limit_phrase"`
+            //Max string `json:"max"`
+            //Is_maxed string `json:"is_maxed"`
+            //Module string `json:"module"`
+            //Item string `json:"item"`
+            //Role string `json:"role"`
+            //Maxed_phrase string `json:"maxed_phrase"`
+            //Count string `json:"count"`
             Units string `json:"units"`
-            Percent10 int `json:"percent10"`
-            Percent20 int `json:"percent20"`
-            Feature string `json:"feature"`
-            Id string `json:"id"`
+            //Percent10 int `json:"percent10"`
+            //Percent20 int `json:"percent20"`
+            //Feature string `json:"feature"`
+            //Id string `json:"id"`
             Percent int `json:"percent"`
-            _Maxed int `json:"_maxed"`
+            //_Maxed int `json:"_maxed"`
             _Count string `json:"_count"`
-            Zeroisunlimited int `json:"zeroisunlimited"`
+            //Zeroisunlimited int `json:"zeroisunlimited"`
         } `json:"data"`
         Errors string `json:"errors"`
         Warning string `json:"warning"`
