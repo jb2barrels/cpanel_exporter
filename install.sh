@@ -44,6 +44,11 @@ while [[ $# -gt 0 ]]; do
             INTERVAL_HEAVY="$1"
             shift
             ;;
+        -install_go_binary_link)
+            shift
+            INSTALL_GO_BINARY_LINK="$1"
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             exit 1
