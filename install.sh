@@ -13,12 +13,12 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -basic_auth_username)
             shift
-            BASICAUTH_USERNAME="$1"
+            BASIC_AUTH_USERNAME="$1"
             shift
             ;;
         -basic_auth_password)
             shift
-            BASICAUTH_PASSWORD="$1"
+            BASIC_AUTH_PASSWORD="$1"
             shift
             ;;
         -port_https)
@@ -53,7 +53,7 @@ if [ -f "./cpanel_exporter" ]; then
     # Copy cpanel_exporter to /bin/
     cp -f ./cpanel_exporter /bin/
     echo "cpanel_exporter binary copied to /bin/"
-    
+
     service_content="[Unit]
 Description=CPanel Exporter
 After=network.target
