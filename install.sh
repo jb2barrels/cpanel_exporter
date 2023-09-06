@@ -56,6 +56,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+rm -f /bin/cpanel_exporter
+
 #Download cpanel_exporter if link specified
 if [ -n "$INSTALL_GO_BINARY_LINK" ]; then
     curl -o /bin/cpanel_exporter $INSTALL_GO_BINARY_LINK
