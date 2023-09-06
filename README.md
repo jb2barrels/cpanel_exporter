@@ -69,12 +69,19 @@ go build -modfile go.mod
 
 ### Run binary
 ```
+INTERVAL=60 INTERVAL_HEAVY=1800 ./cpanel_exporter
+```
+
+### Run binary (Deprecated Legacy - Flags Method)
+Passing flags is deprecated, cpanel users with access to terminal can in most instances see the root process running along with what flags were passed. In favor of security, environment variables are now preferred.
+Note: Legacy method does not support basic auth via flags, those require environment only.
+```
 ./cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117
 ```
 
 ### Run binary with basic auth enabled
 ```
-./cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117 -basicauth_username "example_username" -basicauth_password "example_password123"
+BASIC_AUTH_USERNAME="example_username BASIC_AUTH_PASSWORD="example_password123" INTERVAL=60 INTERVAL_HEAVY=1800 PORT=59117 ./cpanel_exporter
 ```
 
 ### Run binary with an optional https port enabled
@@ -82,7 +89,7 @@ go build -modfile go.mod
 Self signed certificate will by default install to /opt/cpanel_exporter/certs/
 You may modify this path in cpanel_exporter.go if you'd like, or replace the certs after generation.
 ```
-./cpanel_exporter -interval 60 -interval_heavy 1800 -port 59117 -port_https 59118 -basicauth_username "example_username" -basicauth_password "example_password123"
+BASIC_AUTH_USERNAME="example_username BASIC_AUTH_PASSWORD="example_password123" INTERVAL=60 INTERVAL_HEAVY=1800 PORT=59117 PORT_HTTPS=59118 ./cpanel_exporter
 ```
 
 ### Build binary

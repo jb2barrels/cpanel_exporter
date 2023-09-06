@@ -30,8 +30,8 @@ var (
     interval_heavy string
 
     //Used for basic auth
-	basicAuthUser  string
-	basicAuthPass  string
+	basic_auth_user  string
+	basic_auth_pass  string
 
     //reg = prometheus.NewRegistry()
     //  reg.MustRegister(version.NewCollector("cpanel_exporter"))
@@ -306,9 +306,9 @@ func generateSelfSignedCert(certPath, keyPath string) error {
 
 func basicAuthMiddleware(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if basicAuthUser != "" && basicAuthPass != "" {
+		if basic_auth_user != "" && basic_auth_pass != "" {
 			user, pass, ok := r.BasicAuth()
-			if !ok || user != basicAuthUser || pass != basicAuthPass {
+			if !ok || user != basic_auth_user || pass != basic_auth_pass {
 				w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
@@ -319,19 +319,58 @@ func basicAuthMiddleware(handler http.Handler) http.Handler {
 	})
 }
 
-func main(){
+//Get settings set via either command flags or environment variable settings
+//cpanel users with terminal access can in most instances see the root process running and what flags, so we must instead use ENV for credentials
+func getSettings() {
     log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-    flag.StringVar(&port, "port", "59117", "Metrics Port")
+    // Define default values for flags
+    defaultPort := "59117"
+    defaultPortHTTPS := ""
+    defaultInterval := "60"
+    defaultIntervalHeavy := "1800"
 
-    //Set default port_https blank, incase user doesnt want to run it (As a legacy prior feature)
-    flag.StringVar(&port_https, "port_https", "", "HTTPS Metrics Port")
-    
-    flag.StringVar(&interval, "interval","60", "Check interval duration 60s by default")
-    flag.StringVar(&interval_heavy, "interval_heavy","1800", "Bandwidth and other heavy checks interval, 1800s (30min) by default")
-    flag.StringVar(&basicAuthUser, "basicauth_username", "", "Basic Auth Username")
-	flag.StringVar(&basicAuthPass, "basicauth_password", "", "Basic Auth Password")
+    // Check if environment variables are set and use them if available
+    if envPort := os.Getenv("PORT"); envPort != "" {
+        port = envPort
+    } else {
+        flag.StringVar(&port, "port", defaultPort, "Metrics Port")
+    }
+
+    if envPortHTTPS := os.Getenv("PORT_HTTPS"); envPortHTTPS != "" {
+        port_https = envPortHTTPS
+    } else {
+        flag.StringVar(&port_https, "port_https", defaultPortHTTPS, "HTTPS Metrics Port")
+    }
+
+    if envInterval := os.Getenv("INTERVAL"); envInterval != "" {
+        interval = envInterval
+    } else {
+        flag.StringVar(&interval, "interval", defaultInterval, "Check interval duration 60s by default")
+    }
+
+    if envIntervalHeavy := os.Getenv("INTERVAL_HEAVY"); envIntervalHeavy != "" {
+        interval_heavy = envIntervalHeavy
+    } else {
+        flag.StringVar(&interval_heavy, "interval_heavy", defaultIntervalHeavy, "Bandwidth and other heavy checks interval, 1800s (30min) by default")
+    }
+
+    //Environment only settings (not via flags)
+    if envBasicAuthUser := os.Getenv("BASIC_AUTH_USERNAME"); envBasicAuthUser != "" {
+        basic_auth_user = envBasicAuthUser
+    }
+
+    if envBasicAuthPass := os.Getenv("BASIC_AUTH_PASSWORD"); envBasicAuthPass != "" {
+        basic_auth_pass = envBasicAuthPass
+    }
+
+    // Parse flags
     flag.Parse()
+}
+
+func main(){
+    //Get flags and environment settings
+    getSettings()
 
     go runMetrics()
     go runUapiMetrics()
@@ -345,7 +384,7 @@ func main(){
     //With basic auth
     http.Handle("/metrics", basicAuthMiddleware(promhttp.Handler()))
 
-    if basicAuthUser == "" || basicAuthPass == "" {
+    if basic_auth_user == "" || basic_auth_pass == "" {
 		log.Println("WARNING: HTTP server will run without basic authentication, as no username and password specified.")
 	}
 
