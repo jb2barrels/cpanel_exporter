@@ -53,14 +53,7 @@ if [ -f "./cpanel_exporter" ]; then
     # Copy cpanel_exporter to /bin/
     cp -f ./cpanel_exporter /bin/
     echo "cpanel_exporter binary copied to /bin/"
-
-    BUILD_ENV_FILE="INTERVAL=${INTERVAL}
-INTERVAL_HEAVY=${INTERVAL_HEAVY}
-BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}
-BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
-PORT_HTTP=${PORT_HTTP}
-PORT_HTTPS=${PORT_HTTPS}"
-
+    
     service_content="[Unit]
 Description=CPanel Exporter
 After=network.target
@@ -74,7 +67,14 @@ EnvironmentFile=/root/cpanel_exporter.env
 [Install]
 WantedBy=multi-user.target"
 
-    echo $BUILD_ENV_FILE > /root/cpanel_exporter.env
+    cat << EOF > /root/cpanel_exporter.env
+INTERVAL=${INTERVAL}
+INTERVAL_HEAVY=${INTERVAL_HEAVY}
+BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}
+BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
+PORT_HTTP=${PORT_HTTP}
+PORT_HTTPS=${PORT_HTTPS}
+EOF
     chown root:root /root/cpanel_exporter.env
     chmod 700 /root/cpanel_exporter.env
     echo "cpanel_exporter systemd service environment file created"
