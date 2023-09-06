@@ -103,12 +103,22 @@ Install service
 ./install.sh
 ```
 
-Or install with basic auth:
+Flags for install.sh:
+```
+-basic_auth_username
+-basic_auth_password
+-port_https
+-port #Defaults to 59117, if flag not specified
+-interval #Defaults to 60, if flag not specified
+-interval_heavy #Defaults to 1800, if flag not specified
+```
+
+Example Install #1 - With basic auth:
 ```
 ./install.sh -basicauth_username "example_username" -basicauth_password "example_password123"
 ```
 
-Or install with basic auth and https:
+Example Install #2 - Install with basic auth and https:
 ```
 ./install.sh -basicauth_username "example_username" -basicauth_password "example_password123" -port_https 59118
 ```

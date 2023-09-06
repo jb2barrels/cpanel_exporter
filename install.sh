@@ -5,16 +5,18 @@ BASICAUTH_USERNAME=""
 BASICAUTH_PASSWORD=""
 PORT_HTTPS=""
 PORT_HTTP="59117"
+INTERVAL="60"
+INTERVAL_HEAVY="1800"
 
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -basicauth_username)
+        -basic_auth_username)
             shift
             BASICAUTH_USERNAME="$1"
             shift
             ;;
-        -basicauth_password)
+        -basic_auth_password)
             shift
             BASICAUTH_PASSWORD="$1"
             shift
@@ -27,6 +29,16 @@ while [[ $# -gt 0 ]]; do
         -port)
             shift
             PORT_HTTP="$1"
+            shift
+            ;;
+        -interval)
+            shift
+            INTERVAL="$1"
+            shift
+            ;;
+        -interval_heavy)
+            shift
+            INTERVAL_HEAVY="$1"
             shift
             ;;
         *)
@@ -42,24 +54,12 @@ if [ -f "./cpanel_exporter" ]; then
     cp -f ./cpanel_exporter /bin/
     echo "cpanel_exporter binary copied to /bin/"
 
-    # Create systemd service unit file
-    service_file="/etc/systemd/system/cpanel_exporter.service"
-
-    # Build ExecStart command
-    exec_start_cmd="/bin/cpanel_exporter -interval 60 -interval_heavy 1800"
-    
-    # Add basic auth flags if provided
-    if [ ! -z "$BASICAUTH_USERNAME" ] && [ ! -z "$BASICAUTH_PASSWORD" ]; then
-        exec_start_cmd+=" -basicauth_username \"$BASICAUTH_USERNAME\" -basicauth_password \"$BASICAUTH_PASSWORD\""
-    fi
-
-    # Add required http port
-    exec_start_cmd+=" -port \"$PORT_HTTP\""
-
-    # Add https port
-    if [ ! -z "$PORT_HTTPS" ]; then
-        exec_start_cmd+=" -port_https \"$PORT_HTTPS\""
-    fi
+    BUILD_ENV_FILE="INTERVAL=${INTERVAL}
+INTERVAL_HEAVY=${INTERVAL_HEAVY}
+BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}
+BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
+PORT_HTTP=${PORT_HTTP}
+PORT_HTTPS=${PORT_HTTPS}"
 
     service_content="[Unit]
 Description=CPanel Exporter
@@ -68,12 +68,18 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=/root
-ExecStart=$exec_start_cmd
+ExecStart=/bin/cpanel_exporter
+EnvironmentFile=/root/cpanel_exporter.env
 
 [Install]
 WantedBy=multi-user.target"
 
-    echo "$service_content" | tee $service_file > /dev/null
+    echo $BUILD_ENV_FILE > /root/cpanel_exporter.env
+    chown root:root /root/cpanel_exporter.env
+    chmod 700 /root/cpanel_exporter.env
+    echo "cpanel_exporter systemd service environment file created"
+
+    echo "$service_content" | tee /etc/systemd/system/cpanel_exporter.service > /dev/null
     echo "cpanel_exporter systemd service unit file created"
 
     # Reload systemd manager configuration
