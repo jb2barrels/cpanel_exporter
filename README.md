@@ -4,18 +4,6 @@
 Exports cPanel metrics to prometheus
 
 
-## Flags
-```
-cpanel_exporter -h
-Usage of cpanel_exporter:
-  -interval string
-        Check interval duration 60s by default (default "60")
-  -interval_heavy string
-        Bandwidth and other heavy checks interval, 1800s (30min) by default (default "1800")
-  -port string
-        Metrics Port (default "59117")
-```
-
 ## Collectors
 
 ```
