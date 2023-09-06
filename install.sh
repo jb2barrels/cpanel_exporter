@@ -74,7 +74,7 @@ EnvironmentFile=/root/cpanel_exporter.env
 [Install]
 WantedBy=multi-user.target"
 
-    echo $BUILD_ENV_FILE > /root/cpanel_exporter.env
+    cat $BUILD_ENV_FILE > /root/cpanel_exporter.env
     chown root:root /root/cpanel_exporter.env
     chmod 700 /root/cpanel_exporter.env
     echo "cpanel_exporter systemd service environment file created"
