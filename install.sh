@@ -8,6 +8,9 @@ PORT_HTTP="59117"
 INTERVAL="60"
 INTERVAL_HEAVY="1800"
 
+#Allow downloading a binary from online, during installation instead of using ./cpanel_exporter
+INSTALL_GO_BINARY_LINK=""
+
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -48,11 +51,32 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Check if cpanel_exporter binary exists
-if [ -f "./cpanel_exporter" ]; then
+#Download cpanel_exporter if link specified
+if [ -n "$INSTALL_GO_BINARY_LINK" ]; then
+    curl -o /bin/cpanel_exporter $INSTALL_GO_BINARY_LINK
+
+    if [ ! -f "/bin/cpanel_exporter" ]; then
+        echo "Failed to download cpanel_exporter to /bin/"
+        return -1
+    fi
+
+    chmod +x /bin/cpanel_exporter
+    echo "Downloaded cpanel_exporter binary to /bin/"
+else
     # Copy cpanel_exporter to /bin/
     cp -f ./cpanel_exporter /bin/
+
+    if [ ! -f "/bin/cpanel_exporter" ]; then
+        echo "Failed to copy cpanel_exporter to /bin/"
+        return -1
+    fi
+
+    chmod +x /bin/cpanel_exporter
     echo "cpanel_exporter binary copied to /bin/"
+fi
+
+# Check if cpanel_exporter binary exists
+if [ -f "/bin/cpanel_exporter" ]; then
 
     service_content="[Unit]
 Description=CPanel Exporter
@@ -90,5 +114,5 @@ EOF
     systemctl restart cpanel_exporter.service
     echo "cpanel_exporter service enabled and restarted"
 else
-    echo "Error: cpanel_exporter binary not found in the current directory"
+    echo "Error: cpanel_exporter binary not found in /bin/"
 fi
