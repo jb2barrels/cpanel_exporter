@@ -60,7 +60,7 @@ rm -f /bin/cpanel_exporter
 
 #Download cpanel_exporter if link specified
 if [ -n "$INSTALL_GO_BINARY_LINK" ]; then
-    curl -oL /bin/cpanel_exporter $INSTALL_GO_BINARY_LINK
+    curl -L -o /bin/cpanel_exporter $INSTALL_GO_BINARY_LINK
 
     if [ ! -f "/bin/cpanel_exporter" ]; then
         echo "Failed to download cpanel_exporter to /bin/"
