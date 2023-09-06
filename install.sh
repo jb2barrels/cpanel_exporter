@@ -62,7 +62,7 @@ if [ -n "$INSTALL_GO_BINARY_LINK" ]; then
 
     if [ ! -f "/bin/cpanel_exporter" ]; then
         echo "Failed to download cpanel_exporter to /bin/"
-        return -1
+        exit -1
     fi
 
     chmod +x /bin/cpanel_exporter
@@ -73,7 +73,7 @@ else
 
     if [ ! -f "/bin/cpanel_exporter" ]; then
         echo "Failed to copy cpanel_exporter to /bin/"
-        return -1
+        exit -1
     fi
 
     chmod +x /bin/cpanel_exporter
