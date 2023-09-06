@@ -115,12 +115,12 @@ Flags for install.sh:
 
 Example Install #1 - With basic auth:
 ```
-./install.sh -basicauth_username "example_username" -basicauth_password "example_password123"
+./install.sh -basic_auth_username "example_username" -basic_auth_password "example_password123"
 ```
 
 Example Install #2 - Install with basic auth and https:
 ```
-./install.sh -basicauth_username "example_username" -basicauth_password "example_password123" -port_https 59118
+./install.sh -basic_auth_username "example_username" -basic_auth_password "example_password123" -port_https 59118
 ```
 
 Uninstall service
