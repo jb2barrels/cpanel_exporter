@@ -333,10 +333,19 @@ func getUserBandwidthLimitAndUsage(user string) (string,float64,float64,float64)
         return "",0,0,0
     }
 
-    unitsOfMeasurement, _ := convertToString(resp.Result.Data[0]["units"])
-    userBandwidthMax, _ := convertToFloat(resp.Result.Data[0]["_max"])
-    userBandwidthUsed, _ := convertToFloat(resp.Result.Data[0]["_count"])
-    userBandwidthUsedPercent, _ := convertToFloat(resp.Result.Data[0]["percent"])
+    // Declare the variables with default values
+    unitsOfMeasurement := "MB"
+    userBandwidthMax := 0.0
+    userBandwidthUsed := 0.0
+    userBandwidthUsedPercent := 0.0
+
+    // Check if there is at least one element in the slice
+    if len(resp.Result.Data) > 0 {
+        unitsOfMeasurement, _ = convertToString(resp.Result.Data[0]["units"])
+        userBandwidthMax, _ = convertToFloat(resp.Result.Data[0]["_max"])
+        userBandwidthUsed, _ = convertToFloat(resp.Result.Data[0]["_count"])
+        userBandwidthUsedPercent, _ = convertToFloat(resp.Result.Data[0]["percent"])
+    }
 
     /*
     fmt.Println("User (string):", user)
