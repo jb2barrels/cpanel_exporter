@@ -147,3 +147,8 @@ http://example.com:59117/metrics
   #username = "example_username"
   #password = "example_password123"
 ```
+
+### Example Quick Install
+```
+curl -sL https://github.com/jb2barrels/cpanel_exporter/raw/master_fork/install.sh | bash -s - -basic_auth_username "example_username" -basic_auth_password "example_password123" -port_https 59118 -install_go_binary_link https://github.com/jb2barrels/cpanel_exporter/releases/download/v1.0.0_fork/cpanel_exporter
+```
