@@ -46,7 +46,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -install_go_binary_link)
             shift
-            INSTALL_GO_BINARY_LINK="$1"
+            INSTALL_GO_BINARY_LINK=$1
             shift
             ;;
         *)
