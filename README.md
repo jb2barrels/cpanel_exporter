@@ -99,6 +99,7 @@ Flags for install.sh:
 -port #Defaults to 59117, if flag not specified
 -interval #Defaults to 60, if flag not specified
 -interval_heavy #Defaults to 1800, if flag not specified
+-install_go_binary_link #Defaults to ./cpanel_exporter for install source if flag not specified. Or optionally specify a binary HTTP/HTTPS binary link to download.
 ```
 
 Example Install #1 - With basic auth:
