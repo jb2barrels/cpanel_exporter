@@ -95,6 +95,8 @@ User=root
 WorkingDirectory=/root
 ExecStart=/bin/cpanel_exporter
 EnvironmentFile=/root/cpanel_exporter.env
+Restart=on-failure
+RestartSec=600s
 
 [Install]
 WantedBy=multi-user.target"
