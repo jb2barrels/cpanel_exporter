@@ -83,6 +83,9 @@ else
     echo "cpanel_exporter binary copied to /bin/"
 fi
 
+mkdir -p /opt/cpanel_exporter
+chown -R root:root /opt/cpanel_exporter
+
 # Check if cpanel_exporter binary exists
 if [ -f "/bin/cpanel_exporter" ]; then
 
@@ -94,14 +97,14 @@ After=network.target
 User=root
 WorkingDirectory=/root
 ExecStart=/bin/cpanel_exporter
-EnvironmentFile=/root/cpanel_exporter.env
+EnvironmentFile=/opt/cpanel_exporter/cpanel_exporter.env
 Restart=on-failure
 RestartSec=600s
 
 [Install]
 WantedBy=multi-user.target"
 
-    cat << EOF > /root/cpanel_exporter.env
+    cat << EOF > /opt/cpanel_exporter/cpanel_exporter.env
 INTERVAL=${INTERVAL}
 INTERVAL_HEAVY=${INTERVAL_HEAVY}
 BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}
@@ -109,8 +112,8 @@ BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
 PORT_HTTP=${PORT_HTTP}
 PORT_HTTPS=${PORT_HTTPS}
 EOF
-    chown root:root /root/cpanel_exporter.env
-    chmod 700 /root/cpanel_exporter.env
+    chown root:root /opt/cpanel_exporter/cpanel_exporter.env
+    chmod 700 /opt/cpanel_exporter/cpanel_exporter.env
     echo "cpanel_exporter systemd service environment file created"
 
     echo "$service_content" | tee /etc/systemd/system/cpanel_exporter.service > /dev/null
