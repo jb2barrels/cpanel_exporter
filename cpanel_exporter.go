@@ -20,12 +20,19 @@ import(
 	"encoding/pem"
     "os"
     "math/big"
+
+    //mutex sync locks
+    "sync"
 )
 
 var port string
 var port_https string
 
+//Delcare mutex as global variable, so can be used for locking/unlocking metric concurrent changes
+var mu sync.Mutex
+
 var (
+
     interval string
     interval_heavy string
 
@@ -185,6 +192,11 @@ func fetchUapiMetrics() {
 
 func runUapiMetrics(){ 
 
+    // Lock the mutex at the beginning of the function (protect against any potential concurrent metric updates)
+    mu.Lock()
+    // Ensure the mutex is unlocked when the function exits
+    defer mu.Unlock()
+
     //Loop through all cPanel usernames
     for _,u := range getUsernames() {
 
@@ -228,6 +240,12 @@ func runUapiMetrics(){
 }
 
 func runMetrics(){
+
+    // Lock the mutex at the beginning of the function (protect against any potential concurrent metric updates)
+    mu.Lock()
+    // Ensure the mutex is unlocked when the function exits
+    defer mu.Unlock()
+
     users := getUsers("")
     suspended := getUsers("suspended")
     vers := cpanelVersion()
