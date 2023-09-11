@@ -41,7 +41,9 @@ func cpanelVersion() string{
     out, err := exec.Command("/usr/local/cpanel/cpanel","-V").CombinedOutput()
 
     if err != nil {
-        log.Println(err)
+        if debug {
+            log.Println(err)
+        }
         return ""
     }
 
@@ -153,7 +155,9 @@ func getBandwidth(user string) int{
 
     file, err := os.Open("/var/cpanel/bandwidth.cache/"+user)
     if err != nil {
-        log.Println("failed opening file: %s", err)
+        if debug {
+            log.Println("failed opening file: %s", err)
+        }
         return bw
     }
 
@@ -390,7 +394,9 @@ func getFTP() []string{
     var lines []string
     file, err := os.Open("/etc/proftpd/passwd.vhosts")
     if err != nil {
-        log.Println("failed opening file: %s", err)
+        if debug {
+            log.Println("failed opening file: %s", err)
+        }
         return lines
     }
 
@@ -461,7 +467,9 @@ func matchFileLine(f string,regx string) map[string]string{
     file, err := os.Open(f)
 
     if err != nil {
-        log.Println("failed opening file: %s", err)
+        if debug {
+            log.Println("failed opening file: %s", err)
+        }
         return lines
     }
 
@@ -487,7 +495,9 @@ func matchFilesLine(files []string,regx string, stopatfirst bool) map[string]str
         file, err := os.Open(f)
 
         if err != nil {
-            log.Println("failed opening file: %s", err)
+            if debug {
+                log.Println("failed opening file: %s", err)
+            }
             continue
         }
 
@@ -538,7 +548,9 @@ func getRelease() (string){
     file, err := os.Open("/etc/cpupdate.conf")
 
     if err != nil {
-        log.Println("failed opening file: %s", err)
+        if debug {
+            log.Println("failed opening file: %s", err)
+        }
         return ""
     }
 
@@ -566,7 +578,9 @@ func getDomains() ([]string){
     file, err := os.Open("/etc/userdomains")
 
     if err != nil {
-        log.Println("failed opening file: %s", err)
+        if debug {
+            log.Println("failed opening file: %s", err)
+        }
         return domains
     }
 
@@ -602,7 +616,9 @@ func getFilesInDir(root string) []string{
     filer, err := ioutil.ReadDir(root)
     
     if err != nil {
-        log.Println(err)
+        if debug {
+            log.Println(err)
+        }
         return files
     }
     

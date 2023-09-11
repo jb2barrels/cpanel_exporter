@@ -10,7 +10,8 @@ import(
     "path/filepath"
     "log"
     "strconv"
-
+    "strings"
+    
     //For self signed cert generation
     "crypto/ecdsa"
 	"crypto/elliptic"
@@ -30,6 +31,9 @@ var port_https string
 
 //Delcare mutex as global variable, so can be used for locking/unlocking metric concurrent changes
 var mu sync.Mutex
+
+//Debug output
+var debug bool
 
 var (
 
@@ -347,6 +351,14 @@ func getSettings() {
     defaultPortHTTPS := ""
     defaultInterval := "60"
     defaultIntervalHeavy := "1800"
+
+    // Add a flag to enable debug mode
+    flag.BoolVar(&debug, "debug", false, "Enable debug mode")
+
+    // Check if the DEBUG environment variable is set and use it to enable debug mode
+    if strings.ToLower(os.Getenv("DEBUG")) == "true" {
+        debug = true
+    }
 
     // Check if environment variables are set and use them if available
     if envPort := os.Getenv("PORT"); envPort != "" {
