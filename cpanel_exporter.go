@@ -408,49 +408,75 @@ func main(){
     go fetchMetrics()
     go fetchUapiMetrics()
 
-    //Without basic auth
-    //http.Handle("/metrics", promhttp.Handler())
+    //Webserver will stop and keep script running
+	startWebserver()
 
-    //With basic auth
-    http.Handle("/metrics", basicAuthMiddleware(promhttp.Handler()))
+    log.Println("Script has reached the end, this should not have happened...")
+}
 
-    if basic_auth_user == "" || basic_auth_pass == "" {
+func startWebserver() {
+	httpAddr := ":" + port
+	httpsAddr := ":" + port_https
+
+	// With basic auth
+	http.Handle("/metrics", basicAuthMiddleware(promhttp.Handler()))
+
+	if basic_auth_user == "" || basic_auth_pass == "" {
 		log.Println("WARNING: HTTP server will run without basic authentication, as no username and password specified.")
 	}
 
-    if port_https != "" {
-        certFound := false
-        certPath := "/opt/cpanel_exporter/certs/server.crt"
-        keyPath := "/opt/cpanel_exporter/certs/server.key"
+	if port_https != "" {
+		certFound := false
+		certPath := "/opt/cpanel_exporter/certs/server.crt"
+		keyPath := "/opt/cpanel_exporter/certs/server.key"
 
-        if _, err := os.Stat(certPath); os.IsNotExist(err) {
-            if err := generateSelfSignedCert(certPath, keyPath); err != nil {
-                log.Println("Error generating self-signed certificate:", err)
-                return
-            } else {
-                log.Println("HTTPS certs not found. Self signed certificates generated.")
-                certFound = true
-            }
-        } else {
-            log.Println("HTTPS certificates found.")
-            certFound = true
-        }
+		if _, err := os.Stat(certPath); os.IsNotExist(err) {
+			if err := generateSelfSignedCert(certPath, keyPath); err != nil {
+				log.Println("Error generating self-signed certificate:", err)
+			} else {
+				log.Println("HTTPS certs not found. Self-signed certificates generated.")
+				certFound = true
+			}
+		} else {
+			log.Println("HTTPS certificates found.")
+			certFound = true
+		}
 
-        if certFound {
-            // Start HTTPS server
+		if certFound {
+			// Start HTTPS server
+			go func() {
+				defer handlePanic() // Recover from panics in the HTTPS server
+				log.Fatal(http.ListenAndServeTLS(httpsAddr, certPath, keyPath, nil))
+			}()
+			log.Println("HTTPS server started on port: " + port_https)
+		} else {
+			log.Println("HTTPS server not started, certs not found.")
+		}
+	}
 
-            //Run it like this, so the script can continue on to run the HTTP server next
-            go func() {
-                log.Fatal(http.ListenAndServeTLS(":"+port_https, certPath, keyPath, nil))
-            }()
-            log.Println("HTTPS server started on port: "+port_https)
-        } else {
-            log.Println("HTTPS server not started, certs not found.")
-        }
-    }
+	// Start HTTP server
+	go func() {
+		defer handlePanic() // Recover from panics in the HTTP server
+		log.Println("HTTP server started with basic authentication.")
+		log.Fatal(http.ListenAndServe(httpAddr, nil))
+	}()
 
-    log.Println("HTTP server started with basic authentication.")
-    http.ListenAndServe(":"+port, nil)
+	// Keep the program running
+	select {}
+}
 
-    log.Println("Script has ended...")
+
+func handlePanic() {
+	if r := recover(); r != nil {
+		log.Printf("Recovered from panic: %v", r)
+
+		// Optional future additional recovery logic can be put here if needed.
+
+		// Restart the servers
+		go func() {
+			log.Println("Restarting servers...")
+			time.Sleep(60 * time.Second) // Sleep for a moment before restarting
+			startWebserver()
+		}()
+	}
 }
