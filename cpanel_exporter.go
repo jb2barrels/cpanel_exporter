@@ -402,9 +402,11 @@ func main(){
     //Get flags and environment settings
     getSettings()
 
+    //Initialize grabbing of first-time start metrics
     go runMetrics()
     go runUapiMetrics()
 
+    //Schedule grabbing of newer metrics over an interval of time
     go fetchMetrics()
     go fetchUapiMetrics()
 
