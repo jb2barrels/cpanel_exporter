@@ -424,7 +424,7 @@ func startWebserver() {
 	http.Handle("/metrics", basicAuthMiddleware(promhttp.Handler()))
 
 	if basic_auth_user == "" || basic_auth_pass == "" {
-		log.Println("WARNING: HTTP server will run without basic authentication, as no username and password specified.")
+		log.Println("WARNING: HTTP(S) server will run without basic authentication, as no username and password specified.")
 	}
 
 	if port_https != "" {
@@ -454,14 +454,14 @@ func startWebserver() {
 		} else {
 			log.Println("HTTPS server not started, certs not found.")
 		}
-	}
-
-	// Start HTTP server
-	go func() {
-		defer handlePanic() // Recover from panics in the HTTP server
-		log.Println("HTTP server started with basic authentication.")
-		log.Fatal(http.ListenAndServe(httpAddr, nil))
-	}()
+	} else {
+        // Start HTTP server
+        go func() {
+            defer handlePanic() // Recover from panics in the HTTP server
+            log.Println("HTTP server started with basic authentication.")
+            log.Fatal(http.ListenAndServe(httpAddr, nil))
+        }()
+    }
 
 	// Keep the program running
 	select {}

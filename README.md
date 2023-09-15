@@ -72,12 +72,13 @@ Note: Legacy method does not support basic auth via flags, those require environ
 BASIC_AUTH_USERNAME="example_username BASIC_AUTH_PASSWORD="example_password123" INTERVAL=60 INTERVAL_HEAVY=1800 PORT=59117 ./cpanel_exporter
 ```
 
-### Run binary with an optional https port enabled
+### Run binary with https instead of http
 
 Self signed certificate will by default install to /opt/cpanel_exporter/certs/
 You may modify this path in cpanel_exporter.go if you'd like, or replace the certs after generation.
+Note: HTTP mode is disabled if HTTPS is specified.
 ```
-BASIC_AUTH_USERNAME="example_username BASIC_AUTH_PASSWORD="example_password123" INTERVAL=60 INTERVAL_HEAVY=1800 PORT=59117 PORT_HTTPS=59118 ./cpanel_exporter
+BASIC_AUTH_USERNAME="example_username BASIC_AUTH_PASSWORD="example_password123" INTERVAL=60 INTERVAL_HEAVY=1800 PORT_HTTPS=59118 ./cpanel_exporter
 ```
 
 ### Build binary
