@@ -98,8 +98,9 @@ User=root
 WorkingDirectory=/root
 ExecStart=/bin/cpanel_exporter
 EnvironmentFile=/opt/cpanel_exporter/cpanel_exporter.env
-Restart=on-failure
 RestartSec=600s
+Restart=always
+RuntimeMaxSec=1d
 
 [Install]
 WantedBy=multi-user.target"
