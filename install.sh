@@ -100,7 +100,7 @@ ExecStart=/bin/cpanel_exporter
 EnvironmentFile=/opt/cpanel_exporter/cpanel_exporter.env
 RestartSec=600s
 Restart=always
-RuntimeMaxSec=1d
+RuntimeMaxSec=21600
 
 [Install]
 WantedBy=multi-user.target"
