@@ -24,6 +24,9 @@ import(
 
     //mutex sync locks
     "sync"
+
+    //Temp
+    //"encoding/json"
 )
 
 var port string
@@ -34,6 +37,7 @@ var mu sync.Mutex
 
 //Debug output
 var debug bool
+var debugMain bool
 
 var (
 
@@ -166,6 +170,47 @@ var (
             Help: "cPanel Admin Sessions",
         },
     )
+
+    cpanelDiskUsagePercentage = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "cpanel_disk_usage_percent",
+            Help: "cPanel whmapi1 Disk Usage Percent",
+        },
+        []string{"disk"},
+    )
+
+    cpanelSystemLoadAverage = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "cpanel_system_load_average",
+            Help: "cPanel whmapi1 System Load Average",
+        },
+        []string{"load"},
+    )
+
+    cpanelSystemMemory = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "cpanel_system_memory",
+            Help: "cPanel Raw Free Command System Memory",
+        },
+        []string{"memory"},
+    )
+
+    cpanelEximLogIncomingMailCount = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "cpanel_exim_log_incoming_mail_count",
+            Help: "cPanel Raw Exim Log Incoming Mail Count",
+        },
+        []string{"count"},
+    )
+
+    cpanelEximLogOutgoingMailCount = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "cpanel_exim_log_outgoing_mail_count",
+            Help: "cPanel Raw Exim Log Outgoing Mail Count",
+        },
+        []string{"count"},
+    )
+
 )
 
 
@@ -274,6 +319,55 @@ func runMetrics(){
     for p,ct := range plans {
         cpanelPlans.With(prometheus.Labels{"plan": p }).Set(float64(ct))
     }
+
+    // Get disk usage percentage metrics
+    response := getDiskUsagePercent()
+    for _, partition := range response.Data.Partition {
+        cpanelDiskUsagePercentage.WithLabelValues(partition.Disk).Set(float64(partition.Percentage))
+    }
+
+    // Get system load average metrics
+    responseSystemLoad := getSystemLoadAverage()
+    fifteen, _ := strconv.ParseFloat(responseSystemLoad.Data.Fifteen, 64)
+    five, _ := strconv.ParseFloat(responseSystemLoad.Data.Five, 64)
+    one, _ := strconv.ParseFloat(responseSystemLoad.Data.One, 64)
+    cpanelSystemLoadAverage.WithLabelValues("fifteen").Set(fifteen)
+    cpanelSystemLoadAverage.WithLabelValues("five").Set(five)
+    cpanelSystemLoadAverage.WithLabelValues("one").Set(one)
+
+
+    // Get system memory usage
+    responseSystemMemory := getSystemMemory()
+    total, _ := convertToFloat(responseSystemMemory.Total)
+    used, _ := convertToFloat(responseSystemMemory.Used)
+    free, _ := convertToFloat(responseSystemMemory.Free)
+    shared, _ := convertToFloat(responseSystemMemory.Shared)
+    buffcache, _ := convertToFloat(responseSystemMemory.BuffCache)
+    available, _ := convertToFloat(responseSystemMemory.Available)
+    cpanelSystemMemory.WithLabelValues("total").Set(total)
+    cpanelSystemMemory.WithLabelValues("used").Set(used)
+    cpanelSystemMemory.WithLabelValues("free").Set(free)
+    cpanelSystemMemory.WithLabelValues("shared").Set(shared)
+    cpanelSystemMemory.WithLabelValues("buffcache").Set(buffcache)
+    cpanelSystemMemory.WithLabelValues("available").Set(available)
+
+
+    // Get exim Incoming Mail Count
+    responseIncomingCount, err := getEximLogIncomingMailCount()
+    if err != nil {
+        log.Println("responseIncomingCount err, possible empty exim log result: %s", err)
+    }
+    totalCountIncoming, _ := convertToFloat(responseIncomingCount)
+    cpanelEximLogIncomingMailCount.WithLabelValues("count").Set(totalCountIncoming)
+
+    // Get exim Outgoing Mail Count
+    responseOutgoingCount, err := getEximLogOutgoingMailCount()
+    if err != nil {
+        log.Println("responseOutgoingCount err, possible empty exim log result: %s", err)
+    }
+    totalCountOutgoing, _ := convertToFloat(responseOutgoingCount)
+    cpanelEximLogOutgoingMailCount.WithLabelValues("count").Set(totalCountOutgoing)
+
 }
 
 func generateSelfSignedCert(certPath, keyPath string) error {
@@ -398,22 +492,73 @@ func getSettings() {
     flag.Parse()
 }
 
+
+func main_debug() {
+    /*
+	jsonResult, err := eximMailCounts()
+    results, err := getMemoryInfo())
+	if err != nil {
+		log.Printf("Error: %v\n", err)
+	} else {
+		log.Printf("Debug Data: %s\n", results)
+	}
+    */
+
+    /*
+    results := cpWhmapi("--output=jsonpretty", "systemloadavg")
+    log.Printf("Debug Data: %s\n", results)
+    */
+
+    //results := getSystemMemory()
+    //log.Printf("Debug Data: %s\n", results)
+
+    /*
+	// Simulate the provided JSON response as a string
+	jsonStr := cpWhmapi("--output=jsonpretty", "getdiskusage")
+
+	// Unmarshal the JSON response into a cpWhmapiResponseDiskUsage struct
+	var response cpWhmapiResponseDiskUsage
+	if err := json.Unmarshal([]byte(jsonStr), &response); err != nil {
+		log.Printf("Error parsing JSON: %v", err)
+		return
+	}
+
+	// Iterate over the partition data and create Prometheus metrics
+	for _, partition := range response.Data.Partition {
+		// Construct the metric name based on the disk name (partition)
+		metricName := "cpanel_disk_used_percent"
+		labels := `disk="` + partition.Disk + `"`
+		value := partition.Percentage
+
+		// Print the metric in Prometheus exposition format using log.Printf
+		log.Printf("# TYPE %s gauge\n", metricName)
+		log.Printf("%s{%s} %d\n", metricName, labels, value)
+	}
+    */
+}
+
+
 func main(){
-    //Get flags and environment settings
-    getSettings()
+    debugMain = false
+    if(debugMain) {
+        main_debug()
+    } else {
+        //Get flags and environment settings
+        getSettings()
 
-    //Initialize grabbing of first-time start metrics
-    go runMetrics()
-    go runUapiMetrics()
+        //Initialize grabbing of first-time start metrics
+        go runMetrics()
+        go runUapiMetrics()
 
-    //Schedule grabbing of newer metrics over an interval of time
-    go fetchMetrics()
-    go fetchUapiMetrics()
+        //Schedule grabbing of newer metrics over an interval of time
+        go fetchMetrics()
+        go fetchUapiMetrics()
 
-    //Webserver will stop and keep script running
-	startWebserver()
+        //Webserver will stop and keep script running
+        startWebserver()
 
-    log.Println("Script has reached the end, this should not have happened...")
+        log.Println("Script has reached the end, this should not have happened...")
+    }
 }
 
 func startWebserver() {

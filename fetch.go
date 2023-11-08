@@ -15,6 +15,7 @@ import (
     "github.com/remeh/sizedwaitgroup"
     "fmt"
     "time"
+    "net"
 )
 
 func getStartTimeUnixTimestamp() int64{
@@ -147,6 +148,196 @@ type UapiResponseBandwidthUsage struct {
         Warning string `json:"warning"`
     } `json:"result"`
     Func string `json:"func"`
+}
+
+
+/*
+Example:
+{
+   "data" : {
+      "fifteen" : "0.00",
+      "five" : "0.00",
+      "one" : "0.00"
+   },
+   "metadata" : {
+      "command" : "systemloadavg",
+      "reason" : "OK",
+      "result" : 1,
+      "version" : 1
+   }
+}
+*/
+type cpWhmapiResponseLoadAverage struct {
+    Data struct {
+        Fifteen string `json:"fifteen"`
+        Five string `json:"five"`
+        One string `json:"one"`
+    } `json:"data"`
+    Metadata struct {
+        Command string `json:"command"`
+        Reason string `json:"reason"`
+        Result int `json:"result"`
+        Version int `json:"version"`
+    } `json:"metadata"`
+}
+
+/*
+Example:
+
+{
+   "data" : {
+      "partition" : [
+         {
+            "available" : 962672,
+            "device" : "/dev/loop0",
+            "disk" : "loop0",
+            "filesystem" : "/tmp",
+            "inodes_available" : 66788,
+            "inodes_ipercentage" : 0,
+            "inodes_total" : 66816,
+            "inodes_used" : 28,
+            "mount" : "/tmp",
+            "percentage" : 0,
+            "total" : 1016124,
+            "used" : 104
+         },
+         {
+            "available" : 13688460,
+            "device" : "/dev/sda5",
+            "disk" : "sda5",
+            "filesystem" : "/",
+            "inodes_available" : 12830741,
+            "inodes_ipercentage" : 2,
+            "inodes_total" : 13065152,
+            "inodes_used" : 234411,
+            "mount" : "/",
+            "percentage" : 48,
+            "total" : 26120172,
+            "used" : 12431712
+         },
+         {
+            "available" : 460184,
+            "device" : "/dev/sda2",
+            "disk" : "sda2",
+            "filesystem" : "/boot",
+            "inodes_available" : 511674,
+            "inodes_ipercentage" : 0,
+            "inodes_total" : 512000,
+            "inodes_used" : 326,
+            "mount" : "/boot",
+            "percentage" : 55,
+            "total" : 1017736,
+            "used" : 557552
+         },
+         {
+            "available" : 95290,
+            "device" : "/dev/sda1",
+            "disk" : "sda1",
+            "filesystem" : "/boot/efi",
+            "inodes_available" : null,
+            "inodes_ipercentage" : null,
+            "inodes_total" : null,
+            "inodes_used" : null,
+            "mount" : "/boot/efi",
+            "percentage" : 6,
+            "total" : 101158,
+            "used" : 5868
+         },
+         {
+            "available" : 962672,
+            "device" : "/dev/loop0",
+            "disk" : "loop0",
+            "filesystem" : "/var/tmp",
+            "inodes_available" : 66788,
+            "inodes_ipercentage" : 0,
+            "inodes_total" : 66816,
+            "inodes_used" : 28,
+            "mount" : "/var/tmp",
+            "percentage" : 0,
+            "total" : 1016124,
+            "used" : 104
+         }
+      ]
+   },
+   "metadata" : {
+      "command" : "getdiskusage",
+      "reason" : "Successfully retrieved disk usage",
+      "result" : 1,
+      "version" : 1
+   }
+}
+
+*/
+type cpWhmapiResponseDiskUsage struct {
+    Data struct {
+        Partition []struct {
+            Available         int    `json:"available"`
+            Device            string `json:"device"`
+            Disk              string `json:"disk"`
+            Filesystem        string `json:"filesystem"`
+            InodesAvailable   int    `json:"inodes_available"`
+            InodesIPercentage int    `json:"inodes_ipercentage"`
+            InodesTotal       int    `json:"inodes_total"`
+            InodesUsed        int    `json:"inodes_used"`
+            Mount             string `json:"mount"`
+            Percentage        int    `json:"percentage"`
+            Total             int    `json:"total"`
+            Used              int    `json:"used"`
+        } `json:"partition"`
+    } `json:"data"`
+    Metadata struct {
+        Command string `json:"command"`
+        Reason  string `json:"reason"`
+        Result  int    `json:"result"`
+        Version int    `json:"version"`
+    } `json:"metadata"`
+}
+
+// Memory struct
+/*
+Example:
+{
+  "total": 257257,
+  "used": 29731,
+  "free": 189925,
+  "shared": 1297,
+  "buff/cache": 37601,
+  "available": 224457
+}
+*/
+type cpSystemMemory struct {
+    Total     int `json:"total"`
+    Used      int `json:"used"`
+    Free      int `json:"free"`
+    Shared    int `json:"shared"`
+    BuffCache int `json:"buff/cache"`
+    Available int `json:"available"`
+}
+
+/*
+Example:
+{
+   "data" : {
+      "hostname" : "host1.ex.example.com"
+   },
+   "metadata" : {
+      "command" : "gethostname",
+      "reason" : "OK",
+      "result" : 1,
+      "version" : 1
+   }
+}
+*/
+type cpWhmapiResponseHostname struct {
+    Data struct {
+        Hostname string `json:"Hostname"`
+    } `json:"data"`
+    Metadata struct {
+        Command string `json:"command"`
+        Reason  string `json:"reason"`
+        Result  int    `json:"result"`
+        Version int    `json:"version"`
+    } `json:"metadata"`
 }
 
 func getBandwidth(user string) int{
@@ -296,6 +487,46 @@ func getQuota(user string) (string,string,float64){
     return megabytesLimitStr, megabytesUsedStr, perc
 }
 
+// Function to get disk usage percentage metrics
+func getDiskUsagePercent() cpWhmapiResponseDiskUsage {
+    jsonStr := cpWhmapi("--output=jsonpretty", "getdiskusage")
+    var response cpWhmapiResponseDiskUsage
+    err := json.Unmarshal([]byte(jsonStr), &response)
+    if err != nil {
+        panic(err)
+    }
+    return response
+}
+
+// Function to get system load average metrics
+func getSystemLoadAverage() cpWhmapiResponseLoadAverage {
+    jsonStr := cpWhmapi("--output=jsonpretty", "systemloadavg")
+    var response cpWhmapiResponseLoadAverage
+    err := json.Unmarshal([]byte(jsonStr), &response)
+    if err != nil {
+        panic(err)
+    }
+    return response
+}
+
+// Function to get ram usage
+func getSystemMemory() cpSystemMemory {
+    jsonStr, err := getMemoryInfo()
+    if err != nil {
+        panic(err)
+    }
+
+    var response cpSystemMemory
+    err = json.Unmarshal([]byte(jsonStr), &response)
+    if err != nil {
+        panic(err)
+    }
+    return response
+}
+
+
+
+
 //This function may need to be modified, assuming cPanel ends up providing different string unit names
 //Was unable to determine what all strings they provide.
 func convertToMB(value float64, unit string) float64 {
@@ -389,6 +620,191 @@ func cpUapi(user string,commands ...string) []byte{
 }
 
 
+// Perform whmapi1 API call
+func cpWhmapi(commands ...string) []byte{
+    var com []string
+    for _,c:= range commands {
+        com = append(com,c)
+    }
+
+    //log.Println("[DEBUG] Running com: /usr/bin/uapi " + strings.Join(com, " "))
+    out, err := exec.Command("/usr/sbin/whmapi1",com...).CombinedOutput()
+    if err != nil {
+        log.Println(err)
+        return []byte("")
+    }
+
+    return out
+}
+
+// Get email incoming and outgoing counts
+/*
+func eximMailCounts() (string, error) {
+	incomingCmd := "grep \"<=\" /var/log/exim_mainlog | grep -v \"example.com\" | grep \"$(date +'%Y-%m-%d')\" | wc -l"
+	outgoingCmd := "grep \"=>\" /var/log/exim_mainlog | grep -v \"example.com\" | grep \"$(date +'%Y-%m-%d')\" | wc -l"
+
+	incomingCount, err := runAndParseCountExim(incomingCmd)
+	if err != nil {
+        log.Printf("Error empty result eximMailCounts() incomingCount\n", err)
+		return "", err
+	}
+
+	outgoingCount, err := runAndParseCountExim(outgoingCmd)
+	if err != nil {
+        log.Printf("Error empty result eximMailCounts() outgoingCount\n", err)
+		return "", err
+	}
+
+	result := map[string]interface{}{
+		"incoming": incomingCount,
+		"outgoing": outgoingCount,
+	}
+
+	jsonResult, err := json.Marshal(result)
+	if err != nil {
+		log.Printf("Error while creating JSON result: %v\n", err)
+		return "", err
+	}
+
+	return string(jsonResult), nil
+}
+*/
+
+/*
+func runAndParseCountExim(cmd string) (int, error) {
+	out, err := exec.Command("sh", "-c", cmd).CombinedOutput()
+    //log.Printf("runAndParseCount result: %s\n", out)
+	if err != nil {
+		log.Printf("Error while running command: %v\n", err)
+		return 0, err
+	}
+
+	countStr := strings.TrimSpace(string(out))
+	count, err := strconv.Atoi(countStr)
+	if err != nil {
+		log.Printf("Error while parsing count: %v\n", err)
+		return 0, err
+	}
+
+	return count, nil
+}
+*/
+
+func getMemoryInfo() (string, error) {
+    //The below is the go implementation of doing:
+    //free -m | awk '/Mem:/ {printf "{\"total\": %s, \"used\": %s, \"free\": %s, \"shared\": %s, \"buff/cache\": %s, \"available\": %s}", $2, $3, $4, $5, $6, $7}'
+	cmd := exec.Command("free", "-m")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	lines := strings.Split(string(output), "\n")
+	if len(lines) < 2 {
+		return "", fmt.Errorf("Invalid 'free -m' output")
+	}
+
+	fields := strings.Fields(lines[1])
+	if len(fields) < 7 {
+		return "", fmt.Errorf("Invalid 'free -m' output")
+	}
+
+	memoryInfo := map[string]int{
+		"total":     strToInt(fields[1]),
+		"used":      strToInt(fields[2]),
+		"free":      strToInt(fields[3]),
+		"shared":    strToInt(fields[4]),
+		"buff/cache": strToInt(fields[5]),
+		"available": strToInt(fields[6]),
+	}
+
+	jsonData, err := json.Marshal(memoryInfo)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonData), nil
+}
+
+// Function to get system load average metrics
+func getCPanelHostname() cpWhmapiResponseHostname {
+    jsonStr := cpWhmapi("--output=jsonpretty", "gethostname")
+    var response cpWhmapiResponseHostname
+    err := json.Unmarshal([]byte(jsonStr), &response)
+    if err != nil {
+        panic(err)
+    }
+    return response
+}
+
+func extractHostnameDomain(input string) string {
+    // Check if the input is an IP address
+    if net.ParseIP(input) != nil {
+        return "" // If it's an IP, return a blank result
+    }
+
+    parts := strings.Split(input, ".")
+    if len(parts) >= 2 {
+        return parts[len(parts)-2] + "." + parts[len(parts)-1]
+    }
+
+    return ""
+}
+
+func getEximLogIncomingMailCount() (int, error) {
+    //sudo grep "<=" /var/log/exim_mainlog | grep -v "cpanelhostnamehere.com" | grep "$(date +'%Y-%m-%d')"
+    cPanelHostname := getCPanelHostname()
+    domainExclude := extractHostnameDomain(cPanelHostname.Data.Hostname)
+    //log.Println("Domain Exclude Incoming: " + domainExclude)
+    cmdStr := "grep '<=' /var/log/exim_mainlog | grep -v '" + domainExclude + "' | grep \"$(date +'%Y-%m-%d')\" | wc -l"
+    cmd := exec.Command("bash", "-c", cmdStr)
+	output, err := cmd.CombinedOutput()
+    outputStr := strings.TrimSpace(string(output))
+    //log.Println("Incoming mail count: " + outputStr)
+    //log.Println("Incoming mail cmd: " + cmdStr)
+	if err != nil {
+		return 0, err
+	}
+
+    // Check if the trimmed output is empty and convert it to zero
+    if outputStr == "" {
+        return 0, nil
+    }
+
+	return strToInt(outputStr), nil
+}
+
+func getEximLogOutgoingMailCount() (int, error) {
+    //sudo grep "=>" /var/log/exim_mainlog | grep -v "cpanelhostnamehere.com" | grep "$(date +'%Y-%m-%d')"
+    cPanelHostname := getCPanelHostname()
+    domainExclude := extractHostnameDomain(cPanelHostname.Data.Hostname)
+    //log.Println("Domain Exclude Outgoing: " + domainExclude)
+    cmdStr := "grep '=>' /var/log/exim_mainlog | grep -v '" + domainExclude + "' | grep \"$(date +'%Y-%m-%d')\" | wc -l"
+    cmd := exec.Command("bash", "-c", cmdStr)
+	output, err := cmd.CombinedOutput()
+    outputStr := strings.TrimSpace(string(output))
+    //log.Println("Outgoing mail count: " + outputStr)
+    //log.Println("Outgoing mail cmd: " + cmdStr)
+	if err != nil {
+		return 0, err
+	}
+
+    // Check if the trimmed output is empty and convert it to zero
+    if outputStr == "" {
+        return 0, nil
+    }
+
+	return strToInt(outputStr), nil
+}
+
+func strToInt(s string) int {
+	var result int
+	_, err := fmt.Sscanf(s, "%d", &result)
+	if err != nil {
+		return 0
+	}
+	return result
+}
 
 func getFTP() []string{
     var lines []string
