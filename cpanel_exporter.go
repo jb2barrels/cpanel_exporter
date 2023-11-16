@@ -211,6 +211,14 @@ var (
         []string{"count"},
     )
 
+    cpanelEximLogOutgoingMailCountUser = promauto.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "cpanel_whmapi1_user_outgoing_mail_count",
+            Help: "cPanel WHM API User Outgoing Mail Count",
+        },
+        []string{"user"},
+    )
+
 )
 
 
@@ -367,6 +375,20 @@ func runMetrics(){
     }
     totalCountOutgoing, _ := convertToFloat(responseOutgoingCount)
     cpanelEximLogOutgoingMailCount.WithLabelValues("count").Set(totalCountOutgoing)
+
+    // Get outgoing mail count per user sum (using cpanel feature whmapi1: emailtrack_user_stats)
+    getCPanelEmailTrackUserStatsCountResponse := getCPanelEmailTrackUserStats()
+	userSendCountMap := make(map[string]int) // Create a map to store the sum of "SENDCOUNT" for each "USER"
+	for _, record := range getCPanelEmailTrackUserStatsCountResponse.Data.Records { // Iterate over each record
+		// Update the sum for the corresponding user
+		userSendCountMap[record.User] += record.SendCount
+	}
+
+	for sendCountEmailTrackUser, sendCountEmailTrackUserSum := range userSendCountMap { // Add the results to metrics
+        sendCountEmailTrackUserSumFloat, _ := convertToFloat(sendCountEmailTrackUserSum)
+        cpanelEximLogOutgoingMailCountUser.With(prometheus.Labels{"user": sendCountEmailTrackUser }).Set(sendCountEmailTrackUserSumFloat) 
+	}
+
 
 }
 
@@ -533,6 +555,25 @@ func main_debug() {
 		// Print the metric in Prometheus exposition format using log.Printf
 		log.Printf("# TYPE %s gauge\n", metricName)
 		log.Printf("%s{%s} %d\n", metricName, labels, value)
+	}
+    */
+
+    /*
+	// Call the function to get the response
+	response := getCPanelEmailTrackUserStats()
+
+	// Create a map to store the sum of "SENDCOUNT" for each "USER"
+	userSendCountMap := make(map[string]int)
+
+	// Iterate over each record
+	for _, record := range response.Data.Records {
+		// Update the sum for the corresponding user
+		userSendCountMap[record.User] += record.SendCount
+	}
+
+	// Log the results
+	for user, sendCount := range userSendCountMap {
+		log.Println("User:", user, "Total Send Count:", sendCount)
 	}
     */
 }

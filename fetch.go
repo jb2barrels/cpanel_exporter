@@ -340,6 +340,136 @@ type cpWhmapiResponseHostname struct {
     } `json:"metadata"`
 }
 
+
+/*
+Example:
+
+{
+   "data" : {
+      "records" : [
+         {
+            "DEFERCOUNT" : 386,
+            "DEFERFAILCOUNT" : 469,
+            "DOMAIN" : "",
+            "FAILCOUNT" : 83,
+            "OWNER" : "root",
+            "PRIMARY_DOMAIN" : "",
+            "REACHED_MAXDEFERFAIL" : 0,
+            "REACHED_MAXEMAILS" : 0,
+            "SENDCOUNT" : 634,
+            "SUCCESSCOUNT" : 551,
+            "TOTALSIZE" : 33506067,
+            "USER" : "-remote-"
+         },
+         {
+            "DEFERCOUNT" : 0,
+            "DEFERFAILCOUNT" : 0,
+            "DOMAIN" : "example1.com",
+            "FAILCOUNT" : 0,
+            "OWNER" : "examplereseller",
+            "PRIMARY_DOMAIN" : "example1.com",
+            "REACHED_MAXDEFERFAIL" : 0,
+            "REACHED_MAXEMAILS" : 0,
+            "SENDCOUNT" : 31,
+            "SUCCESSCOUNT" : 34,
+            "TOTALSIZE" : 85689191,
+            "USER" : "lotsofexampleusers12345"
+         },
+         {
+            "DEFERCOUNT" : 0,
+            "DEFERFAILCOUNT" : 0,
+            "DOMAIN" : "-system-",
+            "FAILCOUNT" : 0,
+            "OWNER" : "root",
+            "PRIMARY_DOMAIN" : "",
+            "REACHED_MAXDEFERFAIL" : 0,
+            "REACHED_MAXEMAILS" : 0,
+            "SENDCOUNT" : 24,
+            "SUCCESSCOUNT" : 24,
+            "TOTALSIZE" : 75129,
+            "USER" : "root"
+         },
+         {
+            "DEFERCOUNT" : 0,
+            "DEFERFAILCOUNT" : 0,
+            "DOMAIN" : "l-and-example.com",
+            "FAILCOUNT" : 0,
+            "OWNER" : "examplereseller",
+            "PRIMARY_DOMAIN" : "l-and-example.com",
+            "REACHED_MAXDEFERFAIL" : 0,
+            "REACHED_MAXEMAILS" : 0,
+            "SENDCOUNT" : 19,
+            "SUCCESSCOUNT" : 35,
+            "TOTALSIZE" : 2916778,
+            "USER" : "anotherexampleuser123456"
+         },
+         {
+            "DEFERCOUNT" : 0,
+            "DEFERFAILCOUNT" : 0,
+            "DOMAIN" : "plankandexample.com",
+            "FAILCOUNT" : 0,
+            "OWNER" : "examplereseller",
+            "PRIMARY_DOMAIN" : "plankandexample.com",
+            "REACHED_MAXDEFERFAIL" : 0,
+            "REACHED_MAXEMAILS" : 0,
+            "SENDCOUNT" : 18,
+            "SUCCESSCOUNT" : 22,
+            "TOTALSIZE" : 113893594,
+            "USER" : "exampleanotheruser234"
+         },
+         {
+            "DEFERCOUNT" : 0,
+            "DEFERFAILCOUNT" : 0,
+            "DOMAIN" : "adgasdgadsexamplegasdgsdagsdg.com",
+            "FAILCOUNT" : 0,
+            "OWNER" : "examplereseller",
+            "PRIMARY_DOMAIN" : "adgasdgadsexamplegasdgsdagsdg.com",
+            "REACHED_MAXDEFERFAIL" : 0,
+            "REACHED_MAXEMAILS" : 0,
+            "SENDCOUNT" : 1,
+            "SUCCESSCOUNT" : 1,
+            "TOTALSIZE" : 1132,
+            "USER" : "exampleuser123"
+         }
+      ]
+   },
+   "metadata" : {
+      "__chunked" : 1,
+      "command" : "emailtrack_user_stats",
+      "overflowed" : 0,
+      "reason" : "OK",
+      "result" : 1,
+      "version" : 1
+   }
+}
+*/
+type cpWhmapiResponseEmailTrackUserStats struct {
+    Data struct {
+        Records []struct {
+            DeferCount         int    `json:"DEFERCOUNT"`
+            DeferFailCount     int    `json:"DEFERFAILCOUNT"`
+            Domain             string `json:"DOMAIN"`
+            FailCount          int    `json:"FAILCOUNT"`
+            Owner              string `json:"OWNER"`
+            PrimaryDomain      string `json:"PRIMARY_DOMAIN"`
+            ReachedMaxDeferFail int    `json:"REACHED_MAXDEFERFAIL"`
+            ReachedMaxEmails   int    `json:"REACHED_MAXEMAILS"`
+            SendCount          int    `json:"SENDCOUNT"`
+            SuccessCount       int    `json:"SUCCESSCOUNT"`
+            TotalSize          int    `json:"TOTALSIZE"`
+            User               string `json:"USER"`
+        } `json:"records"`
+    } `json:"data"`
+    Metadata struct {
+        Chunked   int    `json:"__chunked"`
+        Command   string `json:"command"`
+        Overflowed int    `json:"overflowed"`
+        Reason    string `json:"reason"`
+        Result    int    `json:"result"`
+        Version   int    `json:"version"`
+    } `json:"metadata"`
+}
+
 func getBandwidth(user string) int{
     var bw int
     var lines []string
@@ -724,6 +854,17 @@ func getMemoryInfo() (string, error) {
 	}
 
 	return string(jsonData), nil
+}
+
+// Function to get email user stats
+func getCPanelEmailTrackUserStats() cpWhmapiResponseEmailTrackUserStats {
+    jsonStr := cpWhmapi("--output=jsonpretty", "emailtrack_user_stats")
+    var response cpWhmapiResponseEmailTrackUserStats
+    err := json.Unmarshal([]byte(jsonStr), &response)
+    if err != nil {
+        panic(err)
+    }
+    return response
 }
 
 // Function to get system load average metrics
