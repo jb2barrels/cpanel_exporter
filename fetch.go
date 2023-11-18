@@ -452,8 +452,8 @@ type cpWhmapiResponseEmailTrackUserStats struct {
             FailCount          int    `json:"FAILCOUNT"`
             Owner              string `json:"OWNER"`
             PrimaryDomain      string `json:"PRIMARY_DOMAIN"`
-            ReachedMaxDeferFail int    `json:"REACHED_MAXDEFERFAIL"`
-            ReachedMaxEmails   int    `json:"REACHED_MAXEMAILS"`
+            ReachedMaxDeferFail json.RawMessage    `json:"REACHED_MAXDEFERFAIL"` //"REACHED_MAXDEFERFAIL" : "5/5 (100%)" OR "REACHED_MAXDEFERFAIL" : 0,
+            ReachedMaxEmails   json.RawMessage    `json:"REACHED_MAXEMAILS"` //"REACHED_MAXEMAILS" : "150/150", OR "REACHED_MAXEMAILS" : 0,
             SendCount          int    `json:"SENDCOUNT"`
             SuccessCount       int    `json:"SUCCESSCOUNT"`
             TotalSize          int    `json:"TOTALSIZE"`
