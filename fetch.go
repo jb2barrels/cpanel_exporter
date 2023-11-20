@@ -858,7 +858,19 @@ func getMemoryInfo() (string, error) {
 
 // Function to get email user stats
 func getCPanelEmailTrackUserStats() cpWhmapiResponseEmailTrackUserStats {
-    jsonStr := cpWhmapi("--output=jsonpretty", "emailtrack_user_stats")
+	// Get the current time in UTC
+	now := time.Now().UTC()
+
+    // Create a new time object for the start of the day in UTC
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+
+	// Get the Unix timestamp for the start of the day
+	unixTimestamp := startOfDay.Unix()
+
+	// Convert Unix timestamp to string
+	startOfDayStr := fmt.Sprintf("%d", unixTimestamp)
+
+    jsonStr := cpWhmapi("--output=jsonpretty", "emailtrack_user_stats", "starttime=" + startOfDayStr)
     var response cpWhmapiResponseEmailTrackUserStats
     err := json.Unmarshal([]byte(jsonStr), &response)
     if err != nil {
